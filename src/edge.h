@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define starsky__edge_h
 
 #include "node.h"
+#include "addressednode.h"
 
 namespace Starsky {
 
@@ -73,6 +74,7 @@ namespace Starsky {
      */
     virtual std::string getAttributes() const;
     virtual std::string toString() const;
+    virtual std::string toString(bool cq) const;
 
     virtual double getWeight() const;
 			

@@ -80,6 +80,13 @@ std::string Edge::toString() const {
 #endif
   return out.str();
 }
+std::string Edge::toString(bool cq) const {
+  std::stringstream out;
+  AddressedNode* n1 = dynamic_cast<AddressedNode*>(first);
+  AddressedNode* n2 = dynamic_cast<AddressedNode*>(second);
+  out << n1->getAddress(cq) << " : " << n2->getAddress(cq);
+  return out.str();
+}
 
 bool Edge::operator<(const Edge& b) const
 {

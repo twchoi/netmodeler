@@ -34,7 +34,7 @@ using namespace std;
 
 //typedef unsigned long long my_int;
 
-DeetooMessage::DeetooMessage(my_int r0, my_int r1, bool cache, Ran1Random& r_num, double p_fail) : _r0(r0), _r1(r1), _cache(cache), _r_num(r_num), _p_fail(p_fail)
+DeetooMessage::DeetooMessage(my_int r0, my_int r1, bool cache, Random& r_num, double p_fail) : _r0(r0), _r1(r1), _cache(cache), _r_num(r_num), _p_fail(p_fail)
 {
   if (r0 > r1) {
 	cerr << "starting point should be less than ending point" << endl

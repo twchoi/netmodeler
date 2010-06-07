@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <memory>
 //#define INT64
 #ifdef INT64
   typedef unsigned long long my_int;
@@ -51,8 +52,8 @@ namespace Starsky {
 class DeetooNetwork : public Network {
 
     public:
-	DeetooNetwork(Ran1Random& r);
-        DeetooNetwork(int nodes, Ran1Random& r);
+	DeetooNetwork(Random& r);
+        DeetooNetwork(int nodes, Random& r);
 	/**
 	 *make new empty network
 	 */
@@ -83,7 +84,13 @@ class DeetooNetwork : public Network {
 	 *@param cache if cache net, true, else if query net, false
 	 *make shortcut connection 
 	 */
-	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map,
+	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache);
+	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache, int no_con);
+	/**
+	 *@param cache if cache net, true, else if query net, false
+	 *make shortcut connection 
+	 */
+	AddressedNode* returnShortcutNode(AddressedNode* node, const std::map<my_int, AddressedNode*>& nd_map,
                                     bool cache);
 	/**
 	 * @param n_map node map
@@ -121,15 +128,26 @@ class DeetooNetwork : public Network {
 	/**
 	 * using distance between log_N neighbors
 	 */
-	my_int guessNetSizeLog(AddressedNode* tnode, bool cq);
+	my_int guessNetSizeLog(AddressedNode* tnode, bool cq, int con);
+	std::vector<int> guessNetSizeNeighbors(AddressedNode* tnode, bool cq);
+	int guessNetSizeNeis(AddressedNode* tnode, bool cq);
+	void printVector(std::vector<int> my_vec);
+	int getMedian(std::vector<int> my_vec);
 	/**
 	 * @param net_size total number of nodes in this creating network
 	 * for making network with evenly distributed nodes in address space.
 	 * when a new node join, maximize minimum distance to the neighbors' address by picking up two candidate addresses then finally select and address with longer minimum distance to the neighbors.
 	 */
 	void createEvenNet(int net_size);
+	void createEvenNet(int size, int no_can);
+	my_int getUniformAddress(int no_can);
+	void createNullNet();
+	int getCountLog() { return _count_log; }
+	int getCountMedian() { return _count_median; }
     protected:
-	Ran1Random& _r_short;
+	Random& _r_short;
+	int _count_log;
+	int _count_median;
 };
 	
 }

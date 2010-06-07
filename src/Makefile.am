@@ -1,12 +1,8 @@
 .PHONY : netmodeler.h
-
 netmodeler.h : 
 	tmpnm=`tempfile`
 	rm -f netmodeler.h;
-	echo "#ifndef __STARSKY_NETMODELER__" > $tmpnm	
-	echo "#define __STARSKY_NETMODELER__" >> $tmpnm	
-	ls *.h | sed -e 's/\(.*\)/#include "\1"/' >> $tmpnm
-	echo "#endif" >> $tmpnm	
+	ls *.h | sed -e 's/\(.*\)/#include "\1"/' > $tmpnm
 	mv $tmpnm netmodeler.h
 
 noinst_PROGRAMS = netmodeler
@@ -19,6 +15,8 @@ addressednode.h addressednode.cpp \
 anycastmessage.cpp \
 anycastmessage.h \
 boundingiterator.h \
+box.h \
+box.cpp \
 broadcastmessage.h \
 broadcastmessage.cpp \
 cache.h \
@@ -71,6 +69,10 @@ edgeswapper.h edgeswapper.cpp \
 emailnetwork.cpp \
 emailnetwork.h \
 event.h event.cpp \
+exactd2node.h \
+exactd2node.cpp \
+exactNodeAct.h \
+exactNodeAct.cpp \
 exppreference.cpp \
 exppreference.h \
 expdrv.h \
@@ -113,6 +115,8 @@ newmancom.h newmancom.cpp \
 nullpart.h \
 node.h \
 node.cpp \
+nodeAction.h \
+nodeAction.cpp \
 nodefactory.h nodefactory.cpp \
 nodeiterator.h \
 noisystardnet.h \

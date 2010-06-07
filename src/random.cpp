@@ -39,3 +39,8 @@ double Random::getDouble(double high, double low) {
     throw std::invalid_argument("RNG args out of order");
   return (high - low) * getDouble01() + low;
 }
+
+double Random::getExp(double lambda) {
+  double p = getDouble01();
+  return lambda * log( 1 / (1-p) );
+}

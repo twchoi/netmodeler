@@ -56,7 +56,7 @@ class DeetooMessage : public Message {
      * @param r1 upper limit of multicasting range
      * @param c_q cache message for caching if it's true, otherwise message for query 
      **/
-     DeetooMessage(my_int r0, my_int r1, bool cache, Ran1Random& r_num, double p_fail);
+     DeetooMessage(my_int r0, my_int r1, bool cache, Random& r_num, double p_fail);
     /**
      * This will return all the nodes and edges in the
      * out component of a particular Node within a number of hops
@@ -87,7 +87,7 @@ class DeetooMessage : public Message {
     my_int _mid_range;  //(_r0,_r1)/2
     my_int _r0, _r1;
     my_int _dist_to_lower;
-    Ran1Random& _r_num;
+    Random& _r_num;
     double _p_fail;
     /**
      * Since we implement this recursively, this function allows us to not

@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdexcept>
 #include <vector>
+#include <cmath>
 
 namespace Starsky {
 
@@ -39,7 +40,12 @@ class Random {
      * Return a random double between 0.0 and 1.0
      */
     virtual double getDouble01() = 0;
-
+    /**
+     * Exponentially select with mean lambda.
+     * @param lambda the mean of expenential distribution
+     * @return an double exponentially distributed
+     */
+    virtual double getExp(double lambda);
     /**
      * Uniformly select over the integers.
      * @param high the largest value to return
