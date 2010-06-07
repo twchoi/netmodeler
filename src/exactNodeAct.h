@@ -23,8 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "event.h"
 #include "netmodeler.h"
-#include "node.h"
+#include "exactd2node.h"
 #include "edge.h"
+#include "box.h"
 #include <map>
 #include <iostream>
 #include <cmath>

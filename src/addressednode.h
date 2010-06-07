@@ -25,12 +25,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "node.h"
 #include <set>
+#include <map>
+#include <iostream>
+#include <vector>
 //#define INT64
 #ifdef INT64
   typedef unsigned long long my_int;
 #else
   typedef unsigned long my_int;
 #endif
+using namespace std;
 namespace Starsky {
 
   /**
@@ -39,21 +43,19 @@ namespace Starsky {
   //template<typename T>
   class AddressedNode : public Node {
     protected:
-      /**
-       * address for cache
-       */
+      // address for cache
       my_int _c_address;
-      /**
-       * address for query 
-       */
+      // address for query 
       my_int _q_address;
       std::set<std::string> _itemSet;
+      std::map<string, pair<my_int, my_int> > _objSet;
       //bool _own;
       my_int _dist;
       my_int _small;
       my_int _big;
        
     public:
+
       my_int addr_i; // column address
       my_int addr_j; // row address
       bool cache;
@@ -64,7 +66,8 @@ namespace Starsky {
        * @param own if true, delete the item when we are deleted
        */
       AddressedNode(const my_int addr, std::set<std::string> itemSet) ;
-      ~AddressedNode() {_itemSet.clear(); }
+      AddressedNode(const my_int addr, std::map<string, pair<my_int, my_int> > objSet) ;
+      ~AddressedNode() {_itemSet.clear(); _objSet.clear(); }
       
       /**
        * @param cache true if cache, else query
@@ -80,18 +83,35 @@ namespace Starsky {
        * return to the pointer to the object being contained.
        */
       std::set<std::string> getItem() const { return _itemSet; }
+      std::map<string, pair<my_int, my_int> > getObject() const { return _objSet; }
+      int objectCount() { return _objSet.size(); }
       /**
        * return true if this node has qItem.
        */
       bool searchItem( std::string qItem);
       /**
+       * return true if this node has qObj.
+       */
+      bool searchObject( string& qObj);
+      /**
        * @param item, insert item to a node
        */
-      void insertItem(std::string item);
+      void insertItem(std::string& item);
+      /**
+       * @param item, insert obj to a node
+       */
+      void insertObject(string& item, my_int& a, my_int& b);
       /**
        * @param item delete this item from a node
        */
       void deleteItem(std::string item);
+      void deleteObject(string obj);
+
+      /**
+       * deletes objects whose range does not include this node's address
+       */
+      void stabilize(int cq_size);
+      my_int getRangeSize(double cq_size);
     };
 }
 #endif

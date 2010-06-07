@@ -180,22 +180,36 @@ void ExactNodeJoinAction::Execute() {
       //Let's find a box with mininum number of nodes in the column or row.
       // Bounded broadcasting over column or row.
       // Lower number of columns or rows will be selected.
-      my_int start, end;
+      pair<int, pair<Box*, ExactD2Node*> > min_box;
       if (moreCols) {
         //broadcast over columns (caching network)
-	start = 
-        pair<int, pair<Box*, ExactD2Node*> > min_box = getBoxMin(_cnet, start, end);
-	
+        min_box = getBoxMin(_cnet, start, end);
       }
       else {
         //broadcast over rows (querying network)
+        min_box = getBoxMin(_cnet, start, end);
       }
 
       if (min_box.first < BOX_M) {
+	pair<Box*, ExactD2Node*> box_info = min_box.second;
+	Box* box = box_info.first;
         // The node can be join in a proper position in the min_box.
-	
+	pair<my_int, my_int> addrs =  box->getEmptyPosition();
+	string position;
+	//map
+	my_int start = addrs.first;
+	my_int end = addrs.second;
+	int col_start = start % AMAX;
+	int col_end = end % AMAX;
+	int row_start = (start - col_start) / AMAX;
+	int row_end = (end - col_end) / AMAX;
+	my_int col_addr = _r.getInt(col_end, col_start);
+	my_int row_addr = _r.getInt(row_end, row_start);
+	my_int addr = col_addr * AMAX + row_addr;
       }
       else {
+	// this column or row needs to be split.
+	//split();
         
       }
 
@@ -241,8 +255,7 @@ void ExactNodeJoinAction::Execute() {
 */
 }
 pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwork& net, my_int start, my_int end) {
-  Ran1Random ran_no = Ran1Random(-1);
-  auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, true, ran_no, 0) );
+  auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, true, _r, 0) );
   auto_ptr<DeetooNetwork> visited_net( m->visit(0, net) );
   auto_ptr<NodeIterator> nit (visited_net->getNodeIterator() );
   int box_min = BOX_M;

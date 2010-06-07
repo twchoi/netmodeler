@@ -49,6 +49,7 @@ namespace Starsky {
       my_int _r_end;
       int _max;
       int _min;
+      //map<string, pair<my_int, my_int> _positionmap;
     
     public:
       Box(my_int start, my_int end);
@@ -62,6 +63,7 @@ namespace Starsky {
       void update(my_int c_start, my_int c_end, my_int r_start, my_int r_end);
       bool equalTo(Box& box);
       int count() { return _nodemap.size(); };
+      //pair<my_int, my_int> getEmptyPosition();
   };
 }
 #endif
