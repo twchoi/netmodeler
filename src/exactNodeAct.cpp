@@ -214,7 +214,7 @@ void ExactNodeJoinAction::Execute() {
       }
       else {
 	string position = (me->getBox())->getPosition(me);
-	bool isLoU;
+	bool isLoU; // left if column, upper if row
 	if (moreCols && ( position == "lu" || position == "lb") ) {
           isLoU = true;
 	}
@@ -225,7 +225,12 @@ void ExactNodeJoinAction::Execute() {
 	else { isLoU = false; }
 	
 	// this column or row needs to be split.
-	//split();
+	if (moreCols) {
+	  split(_cnet, me, start, end, moreCols, isLoU);
+	}
+	else {
+	  split(_qnet, me, start, end, moreCols, isLoU);
+	}
         
       }
 
