@@ -39,8 +39,17 @@ Box::Box(my_int start, my_int end) {
   _r_addr = end;
   _c_start = start % AMAX;
   _c_end = end % AMAX;
+  _c_mid = (int)(_c_start + _c_end) /2;
   _r_start = (start - _c_start) / AMAX;
   _r_end = (end - _c_end) / AMAX;
+  _r_mid = (int)(_r_start + _r_end) /2;
+  setEmptyPositionMap();
+}
+void Box::setEmptyPositionMap() {
+  _positionmap["ru"] = 0;
+  _positionmap["lu"] = 0;
+  _positionmap["rb"] = 0;
+  _positionmap["lb"] = 0;
 }
 void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
   my_int addr = n->getAddress(1);
@@ -51,11 +60,15 @@ void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
     }
   }
   _nodemap[addr] = n;
+  string pos = getPosition(n);
+  _positionmap[pos] = _positionmap[pos] + 1;
 }
 void Box::deleteNode(ExactD2Node* n) {
   my_int addr = n->getAddress(1);
   map<my_int, ExactD2Node*>::iterator idx = _nodemap.find(addr);
   _nodemap.erase(idx);
+  string pos = getPosition(n);
+  _positionmap[pos] = _positionmap[pos] -1;
 }
 void Box::clearNodes() {
   _nodemap.clear();
@@ -70,10 +83,9 @@ bool Box::inBox(my_int addr) {
     return false;
   }
 }
+
 string Box::getPosition(ExactD2Node* n) {
   string position;
-  //set<my_int> cols = n->getCols();
-  //set<my_int> rows = n->getRows();
   my_int my_col = n->getColAddress();
   my_int my_row = n->getRowAddress();
   my_int c_half = (my_int)((_c_start + _c_end) /2.0);
@@ -96,11 +108,15 @@ string Box::getPosition(ExactD2Node* n) {
   }
   return position;
 }
-void Box::update(my_int col_start, my_int col_end, my_int row_start, my_int row_end) {
-  _c_start = col_start;
-  _c_end = col_end;
-  _r_start = row_start;
-  _r_end = row_end;
+void Box::update(my_int start, my_int end) {
+  _c_addr = start;
+  _r_addr = end;
+  _c_start = start % AMAX;
+  _c_end = end % AMAX;
+  _c_mid = (int)(_c_start + _c_end) /2;
+  _r_start = (start - _c_start) / AMAX;
+  _r_end = (end - _c_end) / AMAX;
+  _r_mid = (int)(_r_start + _r_end) /2;
 }
 
 bool Box::isSplittable() {
@@ -145,8 +161,8 @@ pair<my_int, my_int> Box::getBoundary() {
   return make_pair(this->_c_addr, this->_r_addr);
 }
 
-bool Box::equalTo(Box& box) {
-  pair<my_int,my_int> box_addrs = box.getBoundary();
+bool Box::equalTo(Box* box) {
+  pair<my_int,my_int> box_addrs = box->getBoundary();
   if ( (_c_addr == box_addrs.first) && (_r_addr == box_addrs.second) ) {
     return true;
   }
@@ -154,4 +170,90 @@ bool Box::equalTo(Box& box) {
     return false;
   }
   
+}
+pair<my_int, my_int> Box::positionToRange(string pos) {
+  my_int start, end;
+  if (pos == "lu") {
+    start = _c_start * AMAX + _r_start;
+    end = _c_mid * AMAX + _r_mid;
+  }
+  else if (pos == "lb") {
+    start = _c_start * AMAX + _r_mid;
+    end = _c_mid * AMAX + _r_end;
+  }
+  else if (pos == "ru") {
+    start = _c_mid * AMAX + _r_start;
+    end = _c_end * AMAX + _r_mid;
+  }
+  else {
+    //pos = "rb"
+    start = _c_mid * AMAX + _r_mid;
+    end = _c_end * AMAX + _r_end;
+  }
+  return make_pair(start, end);
+}
+string Box::getDiagonalPosition(string pos) {
+  if (pos == "lu") {
+    return "rb";	 
+  } 
+  else if (pos == "rb") {
+    return "lu";
+  }
+  else if (pos == "ru") {
+    return "lb";
+  }
+  else { //pos == "lb"
+    return "ru";
+  }
+}
+pair<my_int, my_int> Box::getJoinPosition() {
+  string min_pos;
+  string max_pos;
+  int min = 10;
+  int max = 0;
+  int count_zero = 0;
+  map<string,int>::const_iterator it;
+  for(it = _positionmap.begin(); it != _positionmap.end(); it++) {
+    int count = it->second;
+    if (count == 0) {
+      count_zero++;
+    }
+    if (count < min) {
+      min = count;
+      min_pos = it->first;
+    }
+    else if (count > max) {
+      max = count;
+      max_pos = it->first;
+    }
+  }
+  if (count_zero == 3) {
+    return positionToRange(max_pos);
+  } 
+  else {
+    return positionToRange(min_pos);
+  }
+
+}
+vector<my_int> Box::getSplittedBoundary(bool isColumn) {
+  my_int start1, start2, end1, end2;
+  vector<my_int> result;
+  if (isColumn) {
+    start1 = _c_addr;
+    end1 = _c_mid * AMAX + _r_end; 
+    start2 = _c_mid * AMAX + _r_start;
+    end2 = _r_addr;  
+  }
+  else {
+    start1 = _c_addr;
+    end1 = _c_end * AMAX + _r_mid; 
+    start2 = _c_start * AMAX + _r_mid;
+    end2 = _r_addr;  
+  }  
+
+  result.push_back(start1);
+  result.push_back(end1);
+  result.push_back(start2);
+  result.push_back(end2);
+  return result;
 }

@@ -181,38 +181,58 @@ void ExactNodeJoinAction::Execute() {
       // Bounded broadcasting over column or row.
       // Lower number of columns or rows will be selected.
       pair<int, pair<Box*, ExactD2Node*> > min_box;
+      pair<my_int,my_int> boundary = (nei->getBox() )->getBoundary();
+      my_int box_start = boundary.first;
+      my_int box_end = boundary.second;
+      my_int start = box_start * AMAX;
+      my_int end = box_end * AMAX + AMAX -1;
       if (moreCols) {
         //broadcast over columns (caching network)
-        min_box = getBoxMin(_cnet, start, end);
+        min_box = getBoxMin(_cnet, me, start, end);
       }
       else {
         //broadcast over rows (querying network)
-        min_box = getBoxMin(_cnet, start, end);
+        min_box = getBoxMin(_qnet, me, start, end);
       }
 
       if (min_box.first < BOX_M) {
 	pair<Box*, ExactD2Node*> box_info = min_box.second;
 	Box* box = box_info.first;
         // The node can be join in a proper position in the min_box.
-	pair<my_int, my_int> addrs =  box->getEmptyPosition();
+	pair<my_int, my_int> addrs =  box->getJoinPosition();
 	string position;
 	//map
 	my_int start = addrs.first;
 	my_int end = addrs.second;
-	int col_start = start % AMAX;
-	int col_end = end % AMAX;
-	int row_start = (start - col_start) / AMAX;
-	int row_end = (end - col_end) / AMAX;
+	my_int col_start = start % AMAX;
+	my_int col_end = end % AMAX;
+	my_int row_start = (start - col_start) / AMAX;
+	my_int row_end = (end - col_end) / AMAX;
 	my_int col_addr = _r.getInt(col_end, col_start);
 	my_int row_addr = _r.getInt(row_end, row_start);
 	my_int addr = col_addr * AMAX + row_addr;
       }
       else {
+	string position = (me->getBox())->getPosition(me);
+	bool isLoU;
+	if (moreCols && ( position == "lu" || position == "lb") ) {
+          isLoU = true;
+	}
+	else { isLoU = false; }
+	if (!moreCols && ( position == "lu" || position == "ru") ) {
+          isLoU = true;
+	}
+	else { isLoU = false; }
+	
 	// this column or row needs to be split.
 	//split();
         
       }
 
+    }
+    else {
+      //The box is not yet full.
+      //Just join in this box with c_addr.
     }
   }
 
@@ -254,9 +274,9 @@ void ExactNodeJoinAction::Execute() {
 #endif
 */
 }
-pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwork& net, my_int start, my_int end) {
+pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end) {
   auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, true, _r, 0) );
-  auto_ptr<DeetooNetwork> visited_net( m->visit(0, net) );
+  auto_ptr<DeetooNetwork> visited_net( m->visit(node, net) );
   auto_ptr<NodeIterator> nit (visited_net->getNodeIterator() );
   int box_min = BOX_M;
   int this_min;
@@ -273,8 +293,60 @@ pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwor
       this_node = node;
     }
   }
-  result = make_pair(box_min, make_pair(min_box, this_node) );
-  return result;
+  result = make_pair(min_box, this_node);
+  return make_pair(box_min, result);
+  //return result;
+}
+void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn, bool isLeft) {
+  
+  auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, isColumn, _r, 0) );
+  auto_ptr<DeetooNetwork> visited_net( m->visit(node, net) );
+  auto_ptr<NodeIterator> nit (visited_net->getNodeIterator() );
+  Box *past = 0, *current;  
+  int it_no = 0;
+  while (nit->moveNext() ) {
+    ExactD2Node* node = dynamic_cast<ExactD2Node*> (nit->current() );
+    current = node->getBox();
+    //pair<my_int, my_int> boundary = current->getBoundary();
+    Box *new_box;
+    if (it_no == 0 || !current->equalTo(past) ) {
+      // first node accessed by split()
+      // or box is not yet splitted by other node.
+      // split this box anyway
+      vector<my_int> new_boundary = current->getSplittedBoundary(isColumn);
+      my_int start1 = new_boundary[0];
+      my_int end1 = new_boundary[1];
+      my_int start2 = new_boundary[2];
+      my_int end2 = new_boundary[3];
+      if(isLeft) {
+        current->update(start1, end1);
+	new_box = new Box(start2, end2);
+      }
+      else {
+        current->update(start2, end2);
+	new_box = new Box(start1, end1);
+      }
+    }
+    else {
+      //box is already splitted
+      //update and add this node to new box.
+      my_int addr = node->getAddress(1);
+      if (new_box->inBox(addr) ) {
+        new_box->addNode(node,_cnet);
+        //node->setBox(new_box);
+        current->deleteNode(node);
+      }
+      else if (current->inBox(addr) ) {
+        current->addNode(node,_cnet);
+        //node->setBox(current);
+        new_box->deleteNode(node);
+      }
+    }
+    it_no++;
+    past = current;
+
+  }
+
 }
 
 int ExactNodeJoinAction::copyObjects(AddressedNode* me, AddressedNode* nei) {

@@ -47,22 +47,35 @@ namespace Starsky {
       my_int _c_end;
       my_int _r_start;
       my_int _r_end;
+      my_int _c_mid;
+      my_int _r_mid;
       int _max;
       int _min;
-      //map<string, pair<my_int, my_int> _positionmap;
+      //string _position;
+      map<string, int> _positionmap;
+      void setEmptyPositionMap();
     
     public:
       Box(my_int start, my_int end);
       void addNode(ExactD2Node* n, DeetooNetwork& net);
       void clearNodes();
       void deleteNode(ExactD2Node* n);
+      //returns position as string "lu", "lb", "ru", "rb"
       string getPosition(ExactD2Node* n);
+      // returns start and end address (_c_address, _r_address)
       pair<my_int, my_int> getBoundary();
+      // returns true if addr is in the box, false otherwise
       bool inBox(my_int addr);
       bool isSplittable();
-      void update(my_int c_start, my_int c_end, my_int r_start, my_int r_end);
-      bool equalTo(Box& box);
+      void update(my_int start, my_int end);
+      bool equalTo(Box* box);
       int count() { return _nodemap.size(); };
+      pair<my_int, my_int> positionToRange(string pos);
+      string getDiagonalPosition(string pos);
+      pair<my_int, my_int> getJoinPosition();
+      //@param isColumn true if column, false if row.
+      //return splitted boundary
+      vector<my_int> getSplittedBoundary(bool isColumn);
       //pair<my_int, my_int> getEmptyPosition();
   };
 }
