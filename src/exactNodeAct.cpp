@@ -131,7 +131,9 @@ void ExactNodeJoinAction::Execute() {
   // if 'c_addr' is not selected for address, 
   // 'me' has to be deleted before the end of join.
   me = new ExactD2Node(c_addr, items);
-  if (_cnet.node_map.size() == 1)
+  int size = _cnet.node_map.size();
+  cout << "size: " << size << endl;
+  if (_cnet.node_map.size() < 1)
   {
     // Network has only one node.
     // Make new Box which covers whole address space.
@@ -143,12 +145,15 @@ void ExactNodeJoinAction::Execute() {
     rows.insert(0);
     rows.insert(AMAX);
     selectednode = me;
-    selectednode->setBox(new Box(0,WMAX));
+    Box* box = new Box(0,WMAX);
+    selectednode->setBox(box);
+    box->addNode(selectednode,_cnet);
     selectednode->updateCols(cols);
     selectednode->updateRows(rows);
     //me->
   }
   else {
+    cout << " m < size < M? " << endl;
     map<my_int, AddressedNode*>::const_iterator cit = _cnet.node_map.upper_bound(c_addr);
     set<my_int> cols;
     set<my_int> rows;
@@ -164,25 +169,38 @@ void ExactNodeJoinAction::Execute() {
       cit--;
       neighbor1 = dynamic_cast<ExactD2Node*> (cit->second);
     }
+    cout << "111111111111111111111111" << endl;
     Box* box0 = neighbor0->getBox();
     Box* box1 = neighbor1->getBox();
+    /* debugging */
+    pair<my_int,my_int> bound0 = box0->getBoundary();
+    pair<my_int,my_int> bound1 = box1->getBoundary();
+    cout << "box0's boundary: (" << bound0.first << ", " << bound0.second << ")" << endl;
+    cout << "box1's boundary: (" << bound1.first << ", " << bound1.second << ")" << endl;
+    cout << "111111111111111111111111" << endl;
+    cout << "c_addr: " << c_addr << endl;
     Box* this_box;
     if (box0->inBox(c_addr) ) {
+      cout << "inbox" << endl;
       this_box = box0;
       nei = neighbor0;
     }
     else if (box1->inBox(c_addr) ) {
+      cout << "outbox" << endl;
       this_box = box1;
       nei = neighbor1;
     }
     else {
       //c_addr is not in the neighbor1's box nor the neighbor0's box.
       //This is impossible!!!
+      cout << "not in nor out of box" << endl;
     }
 
+    cout << "111111111111111111111111" << endl;
     cols = nei->getCols();
     rows = nei->getRows();
     bool moreCols = (cols.size() >= rows.size() );
+    cout << "222222222222222222" << endl;
 
     if ( this_box->count() >= BOX_M ) {
       //Let's find a box with mininum number of nodes in the column or row.
@@ -196,11 +214,15 @@ void ExactNodeJoinAction::Execute() {
       my_int end = box_end * AMAX + AMAX -1;
       if (moreCols) {
         //broadcast over columns (caching network)
+      cout << "~33333333333333333333" << endl;
         min_box = getBoxMin(_cnet, me, start, end);
+      cout << "~44444444444444444444" << endl;
       }
       else {
         //broadcast over rows (querying network)
+      cout << "33333333333333333333" << endl;
         min_box = getBoxMin(_qnet, me, start, end);
+      cout << "44444444444444444444" << endl;
       }
 
       if (min_box.first < BOX_M) {
@@ -214,7 +236,7 @@ void ExactNodeJoinAction::Execute() {
 	delete me;
       }
       else {
-        // min_box is alse full
+        // min_box is also full
 	// this column or row needs to be split.
 	//
 	// ---------------------------------------------
@@ -247,14 +269,23 @@ void ExactNodeJoinAction::Execute() {
 	delete me;
         
       }
+      cout << "222222222222222222222" << endl;
 
     }
     else {
       //The box is not yet full.
       //Just join in this box with c_addr.
+      cout << "not full" << endl;
       my_int addr = this_box->getJoinAddress(_r);
-      selectednode = new ExactD2Node(addr, items, cols, rows);
+      cout << "---------------" << endl;
+      cout << "size of cols: " << cols.size() << ", size of rows: " << rows.size() << ", size of items: " << items.size() << endl;
       delete me;
+      cout << "---------------" << endl;
+      cout << "addr: " << addr << endl;
+      selectednode = new ExactD2Node(addr, items);
+      this_box->addNode(selectednode, _cnet);
+      selectednode->setBox(this_box);
+      cout << "---------------" << endl;
     }
   }
 
@@ -300,13 +331,19 @@ void ExactNodeJoinAction::Execute() {
 }
 pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end) {
   auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, true, _r, 0) );
+  cout << "start: " << start << ", end: " << end << endl;
+  cout << "in getBoxMin- 111111111111111" << endl;
   auto_ptr<DeetooNetwork> visited_net( m->visit(node, net) );
+  cout << "in getBoxMin- 111111111111111" << endl;
   auto_ptr<NodeIterator> nit (visited_net->getNodeIterator() );
+  cout << "in getBoxMin- 111111111111111" << endl;
   int box_min = BOX_M;
   int this_min;
   Box *min_box, *current_box;
+  cout << "in getBoxMin- 111111111111111" << endl;
   ExactD2Node* this_node;
   pair<Box*, ExactD2Node*> result; 
+  cout << "in getBoxMin- 111111111111111" << endl;
   while (nit->moveNext() ) {
     ExactD2Node* node = dynamic_cast<ExactD2Node*> (nit->current() );
     current_box = node->getBox();
@@ -317,6 +354,7 @@ pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwor
       this_node = node;
     }
   }
+  cout << "in getBoxMin- 111111111111111" << endl;
   result = make_pair(min_box, this_node);
   return make_pair(box_min, result);
   //return result;

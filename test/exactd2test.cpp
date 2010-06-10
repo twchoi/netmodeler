@@ -106,9 +106,7 @@ int main(int argc, char *argv[])
   Action* stop = new StopAction(sched);
   sched.at(36000000, stop);
   //std::cout << "#About to start" << std::endl;
-  cout << "111111111111111111111" << endl;
   sched.start();
-  cout << "222222222222222222222222" << endl;
   //check load balance, count number of replica per item.
   /*
   for (item_it = items.begin(); item_it != items.end(); item_it++)

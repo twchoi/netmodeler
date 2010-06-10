@@ -76,7 +76,10 @@ void Box::clearNodes() {
 bool Box::inBox(my_int addr) {
   my_int addr_c = addr % AMAX;
   my_int addr_r = (addr - addr_c) / AMAX;
-  if (( (addr_c >= _c_start) && (addr_c < _c_end) ) && ((addr_r <= _r_start) && (addr_r < _r_end) ) ) {
+  cout << "addr_c: " << addr_c << ", addr_r: " << addr_r << endl;
+  cout << "c_start: " << _c_start << ", c_end: " << _c_end << endl;
+  cout << "r_start: " << _r_start << ", r_end: " << _r_end << endl;
+  if (( (addr_c >= _c_start) && (addr_c < _c_end) ) && ((addr_r >= _r_start) && (addr_r < _r_end) ) ) {
     return true;
   }
   else {

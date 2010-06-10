@@ -62,7 +62,9 @@ DeetooNetwork* DeetooMessage::visit(Node* n, Network& net)
   DeetooNetwork* d2n = dynamic_cast<DeetooNetwork*>( net.newNetwork() );
   AddressedNode* start = dynamic_cast<AddressedNode*> (n);      //start node for broadcasting 
   //d2n->add(start);
+  cout << "before vist" << endl;
   visit(start, net, *d2n);
+  cout << "after vist" << endl;
   return d2n;
 }
 
