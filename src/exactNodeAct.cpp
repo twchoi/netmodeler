@@ -116,6 +116,7 @@ void ExactNodeJoinAction::Execute() {
   set<string>  items;
   items.clear();
   ExactD2Node* me = 0;
+  ExactD2Node* selectednode;
   bool fresh_addr = false;
   while (!fresh_addr) {
     c_addr = (my_int)(_r.getDouble01() * WMAX);
@@ -127,6 +128,9 @@ void ExactNodeJoinAction::Execute() {
       fresh_addr = false;
     }
   }
+  // if 'c_addr' is not selected for address, 
+  // 'me' has to be deleted before the end of join.
+  me = new ExactD2Node(c_addr, items);
   if (_cnet.node_map.size() == 1)
   {
     // Network has only one node.
@@ -135,9 +139,13 @@ void ExactNodeJoinAction::Execute() {
     set<my_int> cols;
     set<my_int> rows;
     cols.insert(0);
+    cols.insert(AMAX);
     rows.insert(0);
-    me = new ExactD2Node(c_addr, items, cols, rows);
-    me->setBox(new Box(0,WMAX));
+    rows.insert(AMAX);
+    selectednode = me;
+    selectednode->setBox(new Box(0,WMAX));
+    selectednode->updateCols(cols);
+    selectednode->updateRows(rows);
     //me->
   }
   else {
@@ -196,23 +204,23 @@ void ExactNodeJoinAction::Execute() {
       }
 
       if (min_box.first < BOX_M) {
+	// number of nodes in min_box is smaller than maximum.
+	// new node should join in this box at splittable position
 	pair<Box*, ExactD2Node*> box_info = min_box.second;
 	Box* box = box_info.first;
         // The node can be join in a proper position in the min_box.
-	pair<my_int, my_int> addrs =  box->getJoinPosition();
-	string position;
-	//map
-	my_int start = addrs.first;
-	my_int end = addrs.second;
-	my_int col_start = start % AMAX;
-	my_int col_end = end % AMAX;
-	my_int row_start = (start - col_start) / AMAX;
-	my_int row_end = (end - col_end) / AMAX;
-	my_int col_addr = _r.getInt(col_end, col_start);
-	my_int row_addr = _r.getInt(row_end, row_start);
-	my_int addr = col_addr * AMAX + row_addr;
+	my_int addr = box->getJoinAddress(_r);
+	selectednode = new ExactD2Node(addr, items, cols, rows);
+	delete me;
       }
       else {
+        // min_box is alse full
+	// this column or row needs to be split.
+	//
+	// ---------------------------------------------
+	// cols and row need to be updated!!!!!!!!!!!!!!
+	// ---------------------------------------------
+	//
 	string position = (me->getBox())->getPosition(me);
 	bool isLoU; // left if column, upper if row
 	if (moreCols && ( position == "lu" || position == "lb") ) {
@@ -224,13 +232,19 @@ void ExactNodeJoinAction::Execute() {
 	}
 	else { isLoU = false; }
 	
-	// this column or row needs to be split.
 	if (moreCols) {
 	  split(_cnet, me, start, end, moreCols, isLoU);
 	}
 	else {
 	  split(_qnet, me, start, end, moreCols, isLoU);
 	}
+	// network is splitted
+	// join with c_addr in splitted box at a proper position
+	// box is this_box
+	// node is me
+        my_int addr = this_box->getJoinAddress(_r);
+	selectednode = new ExactD2Node(addr, items, cols, rows);
+	delete me;
         
       }
 
@@ -238,27 +252,30 @@ void ExactNodeJoinAction::Execute() {
     else {
       //The box is not yet full.
       //Just join in this box with c_addr.
+      my_int addr = this_box->getJoinAddress(_r);
+      selectednode = new ExactD2Node(addr, items, cols, rows);
+      delete me;
     }
   }
 
 
   //cout << "--------------just created, item size? " << me->getObject().size() << endl;
   //my_int q_addr = me->getAddress(0);
-  getConnection(_cnet, me, true);
-  getConnection(_qnet, me, false);
+  getConnection(_cnet, selectednode, true);
+  getConnection(_qnet, selectednode, false);
   //Make sure I get added no matter what
-  _cnet.add(me);
-  _qnet.add(me);
+  _cnet.add(selectednode);
+  _qnet.add(selectednode);
   //add me to each network's node_map
-  _cnet.node_map[c_addr] = me;
-  _qnet.node_map[q_addr] = me;
+  _cnet.node_map[c_addr] = selectednode;
+  _qnet.node_map[q_addr] = selectednode;
   //cout << "---------connected, item size? " << me->getObject().size() << endl;
   
   //Plan to leave:
   //double lifetime = 3600.0 * _r.getDouble01();
   // lifetime and sleep time: exponentially distributed
   double lifetime = _r.getExp(3600.0);
-  Action* leave = new NodeLeaveAction(_sched, _cnet, _qnet, me);
+  Action* leave = new NodeLeaveAction(_sched, _cnet, _qnet, selectednode);
   _sched.after(lifetime, leave);
   //Plan to rejoin
   //double sleeptime = 3600.0 * _r.getDouble01();
@@ -314,6 +331,10 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
     current = node->getBox();
     //pair<my_int, my_int> boundary = current->getBoundary();
     Box *new_box;
+    //Let's add middle address to node's cols or rows
+    my_int mid = current->getMiddle(isColumn);
+    node->addColRow(mid, isColumn);
+
     if (it_no == 0 || !current->equalTo(past) ) {
       // first node accessed by split()
       // or box is not yet splitted by other node.
@@ -323,7 +344,7 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
       my_int end1 = new_boundary[1];
       my_int start2 = new_boundary[2];
       my_int end2 = new_boundary[3];
-      if(isLeft) {
+      if(isLeft) { // left (col) or upper (row)
         current->update(start1, end1);
 	new_box = new Box(start2, end2);
       }
@@ -349,7 +370,8 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
     }
     it_no++;
     past = current;
-
+    //need to update cols, rows
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   }
 
 }

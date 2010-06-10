@@ -59,7 +59,7 @@ namespace Starsky {
       set<my_int> getRows();
       void updateCols(set<my_int> cols);
       void updateRows(set<my_int> rows);
-
+      void addColRow(my_int addr, bool isCol);
   };
 }
 #endif

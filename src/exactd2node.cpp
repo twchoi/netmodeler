@@ -61,6 +61,14 @@ void ExactD2Node::updateCols(set<my_int> cols) {
 void ExactD2Node::updateRows(set<my_int> rows) {
   _rows = rows; 
 }
+void ExactD2Node::addColRow(my_int addr, bool isCol) {
+  if (isCol) {
+    _cols.insert(addr);
+  }
+  else {
+    _rows.insert(addr);
+  }
+}
 /*
 void ExactD2Node::getMyBox(Box* box) {
   my_box = box;

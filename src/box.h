@@ -68,15 +68,18 @@ namespace Starsky {
       bool inBox(my_int addr);
       bool isSplittable();
       void update(my_int start, my_int end);
+      void updateMaps();
+      void clearPositionMap();
       bool equalTo(Box* box);
       int count() { return _nodemap.size(); };
-      pair<my_int, my_int> positionToRange(string pos);
+      my_int positionToRandomAddress(string pos, Random& r);
       string getDiagonalPosition(string pos);
-      pair<my_int, my_int> getJoinPosition();
+      my_int getJoinAddress(Random& r);
       //@param isColumn true if column, false if row.
       //return splitted boundary
       vector<my_int> getSplittedBoundary(bool isColumn);
       //pair<my_int, my_int> getEmptyPosition();
+      my_int getMiddle(bool isCol);
   };
 }
 #endif

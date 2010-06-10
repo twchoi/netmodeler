@@ -117,7 +117,35 @@ void Box::update(my_int start, my_int end) {
   _r_start = (start - _c_start) / AMAX;
   _r_end = (end - _c_end) / AMAX;
   _r_mid = (int)(_r_start + _r_end) /2;
+  updateMaps();
 }
+
+void Box::updateMaps() {
+  clearPositionMap();
+  //_nodemap.clear();
+  map<my_int,ExactD2Node*>::const_iterator it;
+  for (it = _nodemap.begin(); it != _nodemap.end(); it++) {
+    my_int addr = (it->second)->getAddress(1);
+    if (!inBox(addr) ) {
+      _nodemap.erase(it->first);
+    }
+    else {
+      //_nodemap[it->first] = it->second;
+      string pos = getPosition(it->second);
+      _positionmap[pos] = _positionmap[pos] + 1;
+    }
+  }
+
+}
+
+void Box::clearPositionMap() {
+  _positionmap.clear();
+  _positionmap["lu"] = 0;
+  _positionmap["lb"] = 0;
+  _positionmap["ru"] = 0;
+  _positionmap["rb"] = 0;
+}
+
 
 bool Box::isSplittable() {
   //vector<int> positions;
@@ -171,42 +199,31 @@ bool Box::equalTo(Box* box) {
   }
   
 }
-pair<my_int, my_int> Box::positionToRange(string pos) {
-  my_int start, end;
-  if (pos == "lu") {
-    start = _c_start * AMAX + _r_start;
-    end = _c_mid * AMAX + _r_mid;
-  }
-  else if (pos == "lb") {
-    start = _c_start * AMAX + _r_mid;
-    end = _c_mid * AMAX + _r_end;
-  }
-  else if (pos == "ru") {
-    start = _c_mid * AMAX + _r_start;
-    end = _c_end * AMAX + _r_mid;
+my_int Box::positionToRandomAddress(string pos, Random& r) {
+  my_int c_start, c_end, r_start, r_end;
+  if (pos == "lu" || pos == "lb") {
+    c_start = _c_start;
+    c_end = _c_mid;
   }
   else {
-    //pos = "rb"
-    start = _c_mid * AMAX + _r_mid;
-    end = _c_end * AMAX + _r_end;
+    c_start = _c_mid;
+    c_end = _c_end;
   }
-  return make_pair(start, end);
+  if (pos == "lu" || pos == "ru") {
+    r_start = _r_start;
+    r_end = _r_mid;
+  }
+  else {
+    r_start = _r_mid;
+    r_end = _r_end;
+  }
+  my_int col_addr = r.getInt(c_end, c_start);
+  my_int row_addr = r.getInt(r_end, r_start);
+  my_int address = col_addr * AMAX + row_addr; 
+  return address;
 }
-string Box::getDiagonalPosition(string pos) {
-  if (pos == "lu") {
-    return "rb";	 
-  } 
-  else if (pos == "rb") {
-    return "lu";
-  }
-  else if (pos == "ru") {
-    return "lb";
-  }
-  else { //pos == "lb"
-    return "ru";
-  }
-}
-pair<my_int, my_int> Box::getJoinPosition() {
+
+my_int Box::getJoinAddress(Random& r) {
   string min_pos;
   string max_pos;
   int min = 10;
@@ -228,12 +245,25 @@ pair<my_int, my_int> Box::getJoinPosition() {
     }
   }
   if (count_zero == 3) {
-    return positionToRange(max_pos);
+    return positionToRandomAddress(max_pos,r);
   } 
   else {
-    return positionToRange(min_pos);
+    return positionToRandomAddress(min_pos,r);
   }
-
+}
+string Box::getDiagonalPosition(string pos) {
+  if (pos == "lu") {
+    return "rb";	 
+  } 
+  else if (pos == "rb") {
+    return "lu";
+  }
+  else if (pos == "ru") {
+    return "lb";
+  }
+  else { //pos == "lb"
+    return "ru";
+  }
 }
 vector<my_int> Box::getSplittedBoundary(bool isColumn) {
   my_int start1, start2, end1, end2;
@@ -256,4 +286,8 @@ vector<my_int> Box::getSplittedBoundary(bool isColumn) {
   result.push_back(start2);
   result.push_back(end2);
   return result;
+}
+my_int Box::getMiddle(bool isCol) {
+  if (isCol) { return _c_mid; }
+  else { return _r_mid; }
 }
