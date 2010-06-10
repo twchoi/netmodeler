@@ -16,7 +16,7 @@
 using namespace Starsky;
 using namespace std;
 
-ExactNodeLeaveAction::ExactNodeLeaveAction(EventScheduler& sched, DeetooNetwork& cn, DeetooNetwork& qn, AddressedNode* me)
+ExactNodeLeaveAction::ExactNodeLeaveAction(EventScheduler& sched, DeetooNetwork& cn, DeetooNetwork& qn, ExactD2Node* me)
       : _sched(sched), _cnet(cn), _qnet(qn), _me(me)
 {
 
@@ -32,10 +32,10 @@ void ExactNodeLeaveAction::Execute() {
   my_int qaddr = _me->getAddress(0);
   auto_ptr<NodeIterator> ni (_cnet.getNodeIterator() );
   while (ni->moveNext() ) { 
-    AddressedNode* c = dynamic_cast<AddressedNode*> (ni->current() );
+    ExactD2Node* c = dynamic_cast<ExactD2Node*> (ni->current() );
   }
   /*
-  map<my_int, AddressedNode*>::const_iterator mit;
+  map<my_int, ExactD2Node*>::const_iterator mit;
   for (mit=_cnet.node_map.begin(); mit!=_cnet.node_map.end(); mit++) {
     cout << "c_addr: " << mit->first << endl;
   }
@@ -53,32 +53,32 @@ void ExactNodeLeaveAction::Execute() {
   //connect broken ring. make connection between left and right neighbors of leaving node.
   map<my_int, AddressedNode*>::const_iterator c_n_it = _cnet.node_map.upper_bound(caddr);
   map<my_int, AddressedNode*>::const_iterator q_n_it = _qnet.node_map.upper_bound(qaddr);
-  AddressedNode* c_left;
-  AddressedNode* c_right;
+  ExactD2Node* c_left;
+  ExactD2Node* c_right;
   if (c_n_it ==_cnet.node_map.begin() || c_n_it == _cnet.node_map.end() ) {
     // leaving node's address is the biggest or the smallest.
     // the first and the last nodes was it's neighbors.
     // make connection between these two nodes.
-    c_left = (_cnet.node_map.begin() )->second;
-    c_right = (_cnet.node_map.rbegin() )->second;
+    c_left = dynamic_cast<ExactD2Node*> ((_cnet.node_map.begin() )->second);
+    c_right = dynamic_cast<ExactD2Node*> ((_cnet.node_map.rbegin() )->second);
   }
   else {
     // leaving node was in the middle of ring.
-    c_left = c_n_it->second;
+    c_left = dynamic_cast<ExactD2Node*> (c_n_it->second);
     c_n_it--;
-    c_right = c_n_it->second;
+    c_right = dynamic_cast<ExactD2Node*> (c_n_it->second);
   }
   
-  AddressedNode* q_left;
-  AddressedNode* q_right;
+  ExactD2Node* q_left;
+  ExactD2Node* q_right;
   if (q_n_it ==_qnet.node_map.begin() || q_n_it == _qnet.node_map.end() ) {
-    q_left = _qnet.node_map.begin()->second;
-    q_right = _qnet.node_map.rbegin()->second;
+    q_left = dynamic_cast<ExactD2Node*> (_qnet.node_map.begin()->second);
+    q_right = dynamic_cast<ExactD2Node*> (_qnet.node_map.rbegin()->second);
   }
   else {
-    q_left = q_n_it->second;
+    q_left = dynamic_cast<ExactD2Node*> (q_n_it->second);
     q_n_it--;
-    q_right = q_n_it->second;
+    q_right = dynamic_cast<ExactD2Node*> (q_n_it->second);
   }
   
   _cnet.add(Edge(c_left, c_right));
@@ -102,7 +102,7 @@ void ExactNodeLeaveAction::Execute() {
  * When we execute, we select two random nodes and make edges to them,
  * and schedule a time to leave.
  */
-ExactNodeJoinAction::ExactNodeJoinAction(EventScheduler& sched, Random& r, DeetooNetwork& cn, DeetooNetwork& qn, double sq_alpha) : _sched(sched), _r(r), _cnet(cn), _qnet(qn), _sq_alpha(sq_alpha)
+ExactNodeJoinAction::ExactNodeJoinAction(EventScheduler& sched, Random& r, DeetooNetwork& cn, DeetooNetwork& qn) : _sched(sched), _r(r), _cnet(cn), _qnet(qn)
 {
 
 }
@@ -271,6 +271,7 @@ void ExactNodeJoinAction::Execute() {
   _qnet.node_map[q_addr] = selectednode;
   //cout << "---------connected, item size? " << me->getObject().size() << endl;
   
+  /*
   //Plan to leave:
   //double lifetime = 3600.0 * _r.getDouble01();
   // lifetime and sleep time: exponentially distributed
@@ -280,8 +281,9 @@ void ExactNodeJoinAction::Execute() {
   //Plan to rejoin
   //double sleeptime = 3600.0 * _r.getDouble01();
   double sleeptime = _r.getExp(3600.0);
-  Action* rejoin = new NodeJoinAction(_sched, _r, _cnet, _qnet, _sq_alpha);
+  Action* rejoin = new NodeJoinAction(_sched, _r, _cnet, _qnet);
   _sched.after(lifetime + sleeptime, rejoin);
+  */
   //Print out results:
 /*
 #ifdef DEBUG
@@ -376,7 +378,7 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
 
 }
 
-int ExactNodeJoinAction::copyObjects(AddressedNode* me, AddressedNode* nei) {
+int ExactNodeJoinAction::copyObjects(ExactD2Node* me, ExactD2Node* nei) {
     map<string, pair<my_int, my_int> > so = nei->getObject();
     map<string, pair<my_int, my_int> >::iterator so_it;
     int stab_cost = 0; //stabilization cost: count how many object are copied.
@@ -398,11 +400,11 @@ int ExactNodeJoinAction::copyObjects(AddressedNode* me, AddressedNode* nei) {
     }
     return stab_cost;
 }
-void ExactNodeJoinAction::getConnection(DeetooNetwork& net, AddressedNode* me, bool cache)
+void ExactNodeJoinAction::getConnection(DeetooNetwork& net, ExactD2Node* me, bool cache)
 {
   my_int addr = me->getAddress(cache);
   /**
-  map<my_int, AddressedNode*>::const_iterator ttt;
+  map<my_int, ExactD2Node*>::const_iterator ttt;
   for (ttt = net.node_map.begin(); ttt != net.node_map.end(); ttt++) {
     cout << ttt->first << ", ";
   }
@@ -415,38 +417,38 @@ void ExactNodeJoinAction::getConnection(DeetooNetwork& net, AddressedNode* me, b
   }
   // There is only one node in the network. Make connection with it.
   else if ( net.getNodeSize() == 1) {
-    AddressedNode* neighbor = net.node_map.begin()->second;
+    ExactD2Node* neighbor = dynamic_cast<ExactD2Node*> (net.node_map.begin()->second);
     if(neighbor != 0) {
       net.add(Edge(me, neighbor));
     }
   }
   else {
     map<my_int, AddressedNode*>::const_iterator cit = net.node_map.upper_bound(addr);
-    AddressedNode* neighbor0;
-    AddressedNode* neighbor1; 
+    ExactD2Node* neighbor0;
+    ExactD2Node* neighbor1; 
     if (cit == net.node_map.end() || cit == net.node_map.begin() ) { //my node has the biggest or smallest address.
       //cout << "biggest or smallest" << endl;
-      neighbor1 = (net.node_map.begin())->second;
-      neighbor0 = (net.node_map.rbegin())->second; 
+      neighbor1 = dynamic_cast<ExactD2Node*> ((net.node_map.begin())->second);
+      neighbor0 = dynamic_cast<ExactD2Node*> ((net.node_map.rbegin())->second); 
       //cout << neighbor1->getAddress(cache) << ", " << neighbor0->getAddress(cache) << endl; 
     }
     else {  //my node has an address between min and max address
-      neighbor0 = cit->second;
+      neighbor0 = dynamic_cast<ExactD2Node*> (cit->second);
       cit--;
-      neighbor1 = cit->second;
+      neighbor1 = dynamic_cast<ExactD2Node*> (cit->second);
       //net.makeShortcutConnection(net.node_map, cache);
       //cout << neighbor1->getAddress(cache) << ", " << neighbor0->getAddress(cache) << endl; 
     }
     //remove edge between neighbor0 and neighbor1 if it exists
     Edge* old_edge = net.getEdge(neighbor0,neighbor1);
     if (old_edge != 0) {
-      //AddressedNode* no0 = dynamic_cast<AddressedNode*> (old_edge->first);
-      //AddressedNode* no1 = dynamic_cast<AddressedNode*> (old_edge->second);
+      //ExactD2Node* no0 = dynamic_cast<ExactD2Node*> (old_edge->first);
+      //ExactD2Node* no1 = dynamic_cast<ExactD2Node*> (old_edge->second);
       //cout << "old_edge: " << no0->getAddress(cache)
 	//    << " : " << no1->getAddress(cache) << endl;
       net.remove(old_edge);
     }
-    AddressedNode* shortcut = net.returnShortcutNode(me, net.node_map,true);
+    ExactD2Node* shortcut = dynamic_cast<ExactD2Node*> (net.returnShortcutNode(me, net.node_map,true) );
     if(!(net.getEdge(me, neighbor0)) && !(net.getEdge(neighbor0, me))) {
       net.add(Edge(me, neighbor0));
     }
@@ -457,6 +459,7 @@ void ExactNodeJoinAction::getConnection(DeetooNetwork& net, AddressedNode* me, b
       net.add(Edge(me, shortcut));
     }
 
+    /*
     if (cache) {
       // copy objects from my new neighbors if their range includes my address.
       int cost0 = copyObjects(me,neighbor0);
@@ -471,16 +474,17 @@ void ExactNodeJoinAction::getConnection(DeetooNetwork& net, AddressedNode* me, b
       //delete out of range objects from objects list.
       me->stabilize(cqsize);
     }
+    */
 
     //make sure ring is closed.
-    AddressedNode* front = net.node_map.begin()->second;
-    AddressedNode* back = (net.node_map.rbegin())->second;
+    ExactD2Node* front = dynamic_cast<ExactD2Node*> (net.node_map.begin()->second);
+    ExactD2Node* back = dynamic_cast<ExactD2Node*> ((net.node_map.rbegin())->second);
     net.add(Edge(front,back));
     //cout << "after edge addition: " << net.getEdgeSize() << endl;
   }
 }
 
-ExactCacheAction::ExactCacheAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& n, string& so, double sq_alpha) : _sched(sched), _r(r), _ns(ns), _net(n), _so(so),  _sq_alpha(sq_alpha)
+ExactCacheAction::ExactCacheAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& n, string& so) : _sched(sched), _r(r), _ns(ns), _net(n), _so(so)
 {
   
 }
@@ -488,7 +492,8 @@ void ExactCacheAction::Execute() {
   //cout << "cacheaction start here" << endl;
   //schedule a time to cache object to nodes in the range:
   _ns.selectFrom(&_net);
-  AddressedNode* node = dynamic_cast<AddressedNode*> (_ns.select() );
+  ExactD2Node* node = dynamic_cast<ExactD2Node*> (_ns.select() );
+  /*
   double guess = _net.guessNetSizeLog(node,1,1);
   //double guess = _net.getNodeSize();
   //cout << "c_addr: " << node->getAddress(1) << ", sq_alpha: " << _sq_alpha << ", guessNetSize: " << guess << endl;
@@ -501,18 +506,25 @@ void ExactCacheAction::Execute() {
   //_so.start = rg_start;
   //_so.end = rg_end;
   //node->insertObject(_so);
+  */
+  Box* this_box = node->getBox();
+  pair<my_int,my_int> range = this_box->getRange(1);
+  my_int rg_start = range.first * AMAX;
+  my_int rg_end = (range.second * AMAX) + (AMAX -1);
   auto_ptr<DeetooMessage> cache_m(new DeetooMessage(rg_start, rg_end, true, _r, 0.0) );
   auto_ptr<DeetooNetwork> tmp_net (cache_m->visit(node, _net));
   auto_ptr<NodeIterator> ni (tmp_net->getNodeIterator() );
   while (ni->moveNext() ) {
-    AddressedNode* inNode = dynamic_cast<AddressedNode*> (ni->current() );
+    ExactD2Node* inNode = dynamic_cast<ExactD2Node*> (ni->current() );
     //cout << "----------cacheaction: " << endl;
     //cout << "addr: " << inNode->getAddress(1) << "item: " << _so.content << endl;
     //cout << "size before insertion: " << (inNode->getObject()).size() << endl;
     inNode->insertObject(_so, rg_start, rg_end);
     //cout << "size after insertion: " << (inNode->getObject()).size() << endl;
   }
+  /*
   node->stabilize(cqsize);
+  */
 #ifdef DEBUG
   std::cout << _sched.getCurrentTime() << "\t"
 	    << "caching\t"
@@ -524,7 +536,7 @@ void ExactCacheAction::Execute() {
 	    << std::endl;
 #endif
 }
-ExactQueryAction::ExactQueryAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& n, string so, double sq_alpha) : _sched(sched), _r(r), _ns(ns), _net(n), _so(so), _sq_alpha(sq_alpha)
+ExactQueryAction::ExactQueryAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& n, string so) : _sched(sched), _r(r), _ns(ns), _net(n), _so(so)
 {
 
 }
@@ -534,7 +546,8 @@ void ExactQueryAction::Execute() {
   //cout << "queryaction start here" << endl;
   UniformNodeSelector u_node(_r);
   _ns.selectFrom(&_net);
-  AddressedNode* node = dynamic_cast<AddressedNode*> (_ns.select() );
+  ExactD2Node* node = dynamic_cast<ExactD2Node*> (_ns.select() );
+  /*
   double guess = _net.guessNetSizeLog(node,0,1);
   //cout << "querying: guess: " << guess << endl;
   //double guess = _net.getNodeSize();
@@ -546,6 +559,11 @@ void ExactQueryAction::Execute() {
   my_int rg_start = range.first, rg_end = range.second;
   //cout << "rg_start: "<< rg_start << ", rg_end: " << rg_end << ", diff: " << rg_end-rg_start << endl;
 
+  */
+  Box* this_box = node->getBox();
+  pair<my_int, my_int> range = this_box->getRange(0);
+  my_int rg_start = range.first;
+  my_int rg_end = range.second;
   auto_ptr<DeetooMessage> query_m (new DeetooMessage(rg_start, rg_end,false, _r, 0.0) );
   auto_ptr<DeetooNetwork> tmp_net (query_m->visit(node, _net));
   no_msg = tmp_net->getNodeSize();
@@ -554,7 +572,7 @@ void ExactQueryAction::Execute() {
   sum_hits = 0;
   auto_ptr<NodeIterator> ni (tmp_net->getNodeIterator() );
   while (ni->moveNext() ) {
-    AddressedNode* inNode = dynamic_cast<AddressedNode*> (ni->current() );
+    ExactD2Node* inNode = dynamic_cast<ExactD2Node*> (ni->current() );
 
     //if (_so == 0) { cout << "null" << endl; }
     //else { cout << "not null" << endl; }

@@ -291,3 +291,11 @@ my_int Box::getMiddle(bool isCol) {
   if (isCol) { return _c_mid; }
   else { return _r_mid; }
 }
+pair<my_int, my_int> Box::getRange(bool isCol) {
+  if (isCol) {
+    return make_pair(_c_start, _c_end);
+  }
+  else {
+    return make_pair(_r_start, _r_end);
+  }
+}

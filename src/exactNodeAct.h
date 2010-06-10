@@ -42,19 +42,19 @@ namespace Starsky {
   // action for node leaves
   class ExactNodeLeaveAction : public Action {
     public:
-      ExactNodeLeaveAction(EventScheduler& sched, DeetooNetwork& cn, DeetooNetwork& qn, AddressedNode* me); 
+      ExactNodeLeaveAction(EventScheduler& sched, DeetooNetwork& cn, DeetooNetwork& qn, ExactD2Node* me); 
       void Execute();
     protected:
       EventScheduler& _sched;
       DeetooNetwork& _cnet;
       DeetooNetwork& _qnet;
-      AddressedNode* _me;
+      ExactD2Node* _me;
   };
 
   // action for node joins 
   class ExactNodeJoinAction : public Action {
     public:
-      ExactNodeJoinAction(EventScheduler& sched, Random& r, DeetooNetwork& cn, DeetooNetwork& qn, double sq_alpha);
+      ExactNodeJoinAction(EventScheduler& sched, Random& r, DeetooNetwork& cn, DeetooNetwork& qn);
       void Execute();
       /**
        * make connections to 2 direct neighbors and 1 shortcut neighbor.
@@ -62,14 +62,14 @@ namespace Starsky {
        * @param me joining node
        * @param cache determine if this network is for cache or for query.
        */
-      void getConnection(DeetooNetwork& net, AddressedNode* me, bool cache);
+      void getConnection(DeetooNetwork& net, ExactD2Node* me, bool cache);
       /**
        * copy objects from neighbors
        * @param me joing node
        * @param nei neighbor node
        * @return returns number of copied objects
        */
-      int copyObjects(AddressedNode* me, AddressedNode* nei);
+      int copyObjects(ExactD2Node* me, ExactD2Node* nei);
       int stabilization_msgs;
     protected:
       EventScheduler& _sched;
@@ -87,7 +87,7 @@ namespace Starsky {
   // action for caching objects in the network
   class ExactCacheAction : public Action {
     public:
-      ExactCacheAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& net, string& so, double sq_alpha);
+      ExactCacheAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& net, string& so);
       void Execute();
     protected:
       EventScheduler& _sched;
@@ -95,7 +95,6 @@ namespace Starsky {
       DeetooNetwork& _net;
       INodeSelector& _ns;
       string _so;
-      double _sq_alpha;
   };
   // action for querying objects
   class ExactQueryAction : public Action {
@@ -104,7 +103,7 @@ namespace Starsky {
       int sum_hits;
       int no_msg;
       int depth;
-      ExactQueryAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& net, string so, double sq_alpha);
+      ExactQueryAction(EventScheduler& sched, Random& r, INodeSelector& ns, DeetooNetwork& net, string so);
       void Execute();
     protected:
       EventScheduler& _sched;
@@ -112,7 +111,6 @@ namespace Starsky {
       DeetooNetwork& _net;
       INodeSelector& _ns;
       string _so;
-      double _sq_alpha;
   };
 }
 #endif

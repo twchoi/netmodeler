@@ -80,6 +80,7 @@ namespace Starsky {
       vector<my_int> getSplittedBoundary(bool isColumn);
       //pair<my_int, my_int> getEmptyPosition();
       my_int getMiddle(bool isCol);
+      pair<my_int, my_int> getRange(bool isCol);
   };
 }
 #endif
