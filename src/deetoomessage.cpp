@@ -36,10 +36,12 @@ using namespace std;
 
 DeetooMessage::DeetooMessage(my_int r0, my_int r1, bool cache, Random& r_num, double p_fail) : _r0(r0), _r1(r1), _cache(cache), _r_num(r_num), _p_fail(p_fail)
 {
+  /*
   if (r0 > r1) {
 	cerr << "starting point should be less than ending point" << endl
 		<< "(" << _r0 << ", " << _r1 << ")" << endl;
   }
+  */
   _mid_range = (my_int)( ( (double)(_r0)+(double)(_r1) )/(double)(2) );
   out_edge_count = 1;
   init_node = NULL;
@@ -49,22 +51,44 @@ DeetooMessage::DeetooMessage(my_int r0, my_int r1, bool cache, Random& r_num, do
     _dist_to_lower = 4294967295L;
   #endif
   insert_fail = false;
+  _pp_success = false;
 }
-
+bool DeetooMessage::inRange(AddressedNode* inode)
+{
+  bool betw = inode->isBetweenFromLeft(_r0, _r1, _cache);
+  my_int nd_addr = inode->getAddress(_cache);
+  if (nd_addr == _r0 || nd_addr == _r1) { return true; }
+  else { return betw; }
+}
+/*
 bool DeetooMessage::inRange(AddressedNode* inode)
 {
     my_int nd_addr = inode->getAddress(_cache);
-    return ( ( nd_addr >= _r0) && ( nd_addr <= _r1) );
+    //return ( ( nd_addr >= _r0) && ( nd_addr <= _r1) );
+    return ( ( nd_addr > _r0) && ( nd_addr <= _r1) );
 }	
+*/
 
+/**
+ * bi-directional visit
+ */
 DeetooNetwork* DeetooMessage::visit(Node* n, Network& net)
 {
   DeetooNetwork* d2n = dynamic_cast<DeetooNetwork*>( net.newNetwork() );
   AddressedNode* start = dynamic_cast<AddressedNode*> (n);      //start node for broadcasting 
   //d2n->add(start);
-  cout << "before vist" << endl;
   visit(start, net, *d2n);
-  cout << "after vist" << endl;
+  return d2n;
+}
+/**
+ * Uni-directional visit
+ */
+DeetooNetwork* DeetooMessage::visitD1(Node* n, Network& net)
+{
+  DeetooNetwork* d2n = dynamic_cast<DeetooNetwork*>( net.newNetwork() );
+  AddressedNode* start = dynamic_cast<AddressedNode*> (n);      //start node for broadcasting 
+  //d2n->add(start);
+  visitD1(start, net, *d2n);
   return d2n;
 }
 
@@ -76,10 +100,12 @@ void DeetooMessage::visit(AddressedNode* start, Network& net, DeetooNetwork& vis
       insert_fail = true;
       return; }
   
-  //cout << "start node: " << start->getAddress(_cache) << endl;
+  //cout << "start node: " << start->getAddress(_cache) << ", range(" << _r0 << "," << _r1 << ")"<< endl;
   // If start node is not in the range(_r0, _r1), find the closest neighbor to lower bound in range.
   if ( (!inRange(start) ) )  //node is not in this range
+  //if ( !(start->isBetweenFromLeft(_r0,_r1,_cache) ) )  //node is not in this range
   {
+      //cout << "=============out of range" << endl;
       AddressedNode* next_node=NULL;
       my_int current_dist_to_lower = _dist_to_lower;
       auto_ptr<NodeIterator> ni(net.getNeighborIterator(start) );
@@ -103,7 +129,7 @@ void DeetooMessage::visit(AddressedNode* start, Network& net, DeetooNetwork& vis
 	  return;
       }
       //We have the closest neighbor to lower, start over there
-      out_edge_count++;
+      out_edge_count++;http://www.gppgolf.com/gppg/content/viewCart.php
       return visit(next_node, net, visited_net);
   }
   if ( init_node == NULL ) { init_node = start; }
@@ -111,82 +137,207 @@ void DeetooMessage::visit(AddressedNode* start, Network& net, DeetooNetwork& vis
   //We are in the range, get the neighbors.
   //divide range to upper and lower.
   //get upper neighbors and lower neighbors.
-  //std::map will sort them according to their address, lowest first.
+  //std::map will sort them according to their distances, lowest first.
   //will divide neighbors to upeer and lower groups wrt its address
-  std::map<my_int, AddressedNode*> lower_neighbors;  
-  std::map<my_int, AddressedNode*> upper_neighbors;
+  pair<map<my_int, AddressedNode*>, map<my_int, AddressedNode*> > cons = getConnectionInfo(start, _r0, _r1, net);
+  std::map<my_int, AddressedNode*> left_con = cons.first;  
+  std::map<my_int, AddressedNode*> right_con = cons.second;
+  //cout << "~~~~~~~~~~~left cons of " << start->getAddress(_cache) << endl;
+  //printCons(left_con);
+  //cout << "~~~~~~~~~~~right cons of " << start->getAddress(_cache) << endl;
+  //printCons(right_con);
+  
+  //if ( start->isBetweenFromLeft(_r0,_r1,_cache) ) {
+    if (_neighbor_count > 0 ) { 
+      visitInRange(start, _r0, _r1, left_con, 1, net, visited_net);
+      visitInRange(start, _r0, _r1, right_con, 0, net, visited_net);
+    }
+  //}
+
+  return;
+}
+void DeetooMessage::visitD1(AddressedNode* start, Network& net, DeetooNetwork& visited_net)
+{
+  //cout << "start: " << start->getAddress(_cache) << "rg_start: " << _r0 << "rg_end: " << _r1 <<endl;
+  if ( init_node == NULL ) { init_node = start; }
+  visited_net.add(start);
+
+  std::map<my_int, AddressedNode*> neighbors;  
   auto_ptr<NodeIterator> ni(net.getNeighborIterator(start) );
   while(ni->moveNext() )
   {
     AddressedNode* current_node = dynamic_cast<AddressedNode*> (ni->current() );
     //check if current node is within the range
     if (inRange(current_node) ) {
-      my_int c_node_addr = current_node->getAddress(_cache);
-      if (c_node_addr < start->getAddress(_cache) )
-      {
-         lower_neighbors[c_node_addr]=current_node; 
-      }
-      else if (c_node_addr > start->getAddress(_cache) )
-      {
-         upper_neighbors[c_node_addr]=current_node;
-      }
+      my_int dist = start->leftDistanceTo(current_node,_cache);
+      neighbors[dist]=current_node; 
     }
   }
+  //cout << "print connections of " << start->getAddress(_cache) << endl;
+  //printCons(neighbors);
 
-  //Start with lower neighbors first.
-  my_int last_lower = _r0;
-  AddressedNode* last_node_low = NULL;
-  std::map<my_int, AddressedNode*>::const_iterator it_low;
-  for (it_low=lower_neighbors.begin(); it_low!=lower_neighbors.end(); it_low++)
+  int count = 0;
+  my_int rg_start, rg_end;
+  map<my_int,AddressedNode*>::const_iterator it;
+  for (it=neighbors.begin(); it!=neighbors.end(); it++)
   {
-	if ( _r0 != _r1) {
-          //We don't need to add the node, it is also done when we add an edge
-          //visited_net.add(it_low->second);
-	  visited_net.add(Edge(start, it_low->second) );
-	  DeetooMessage m_low = DeetooMessage(last_lower, it_low->first, _cache, _r_num, _p_fail);
-	  //Here is the recursion.  Note we don't make a new network
-	  m_low.visit(it_low->second, net, visited_net);
-	  last_lower = it_low->first +1;
-	  last_node_low = it_low->second;
+    AddressedNode* cur_node = it->second;
+    my_int cur_addr = cur_node->getAddress(_cache);
+    rg_start = cur_addr;
+    if (count == neighbors.size() -1) { // The last connection
+      //cout << "last connection  " << _r1 << endl;
+      rg_end = _r1;
+    } 
+    else {
+      it++;
+      AddressedNode* next_node = it->second;
+      my_int next_addr = next_node->getAddress(_cache);
+      rg_end = next_addr;
+      it--;
+    }
+    //cout << "range: " << rg_start << ", " << rg_end << endl;
+    if ( rg_start != rg_end) {
+      //cout << "this node: " << start->getAddress(_cache) << "con: " << cur_addr << "range: (" << rg_start << "," << rg_end << ")" << endl;
+      visited_net.add(Edge(cur_node,start) );
+      //cout << "``````````````(" << cur_node->getAddress(_cache) << "," << start->getAddress(_cache) << ") edge is added" << endl;
+      DeetooMessage m = DeetooMessage(rg_start, rg_end, _cache, _r_num, _p_fail);
+      m.visitD1(it->second, net, visited_net);
+    }
+    count++;
+  }
+  return;  
+}
+
+/*
+ * Find neighbor connections within the range.
+ * return map of distance and node for left and right neighbors
+ */
+pair<map<my_int,AddressedNode*>,map<my_int,AddressedNode*> > DeetooMessage::getConnectionInfo(AddressedNode* t_node, my_int start, my_int end, Network& net) {
+  pair<map<my_int,AddressedNode*>,map<my_int,AddressedNode*> > ret; //return value
+  my_int t_addr = t_node->getAddress(_cache);
+  map<my_int, AddressedNode*> left_con; //left neighbors
+  map<my_int, AddressedNode*> right_con; //right neighbors
+  _neighbor_count = 0;
+  auto_ptr<NodeIterator> ni(net.getNeighborIterator(t_node) );
+  while(ni->moveNext() )
+  {
+    AddressedNode* current_node = dynamic_cast<AddressedNode*> (ni->current() );
+    //check if current node is within the range
+    my_int left_dist = t_node->leftDistanceTo(current_node,_cache);
+    my_int right_dist = current_node->rightDistanceTo(t_node,_cache);
+    //cout << "in while dist: " << left_dist << ", current_node: " << current_node->getAddress(_cache) << endl;
+    if (current_node->isBetweenFromLeft(t_addr, end, _cache) ) {
+      left_con[left_dist] = current_node;
+    }
+    else if (current_node->isBetweenFromLeft(start,t_addr,_cache) ){
+      right_con[right_dist] = current_node;
+    }
+    _neighbor_count++;
+  }
+  ret = make_pair(left_con, right_con);
+  return ret;
+}
+
+/*
+void DeetooMessage::visitInRangeOld(AddressedNode* this_node, my_int start, my_int end, map<my_int,AddressedNode*> cons, bool left, Network& net, DeetooNetwork& visited_net) {
+  if (cons.size() != 0) { //make sure if connection map is not empty!
+    my_int this_addr = this_node->getAddress(_cache);
+    my_int last = this_addr;
+    int count = cons.size();
+    int i = 0;
+    //the first element of cons is the nearest.
+    map<my_int, AddressedNode*>::const_iterator it;
+    for (it = cons.begin(); it != cons.end(); it++) {
+      AddressedNode* next_node = it->second;
+      visited_net.add(Edge(this_node,next_node) );
+      my_int next_addr = next_node->getAddress(_cache);
+      //cout << "this_node, next_addr: " << this_addr << " ," << next_addr << endl;
+      my_int front = last;
+      my_int back = next_addr;
+      my_int rg_start, rg_end;
+      if (i == count-1) {  // The last bit
+	if (left) {
+          // the left farthest neighbor
+	  rg_start = front;
+	  rg_end = end;
 	}
+	else { //the right farthest neighbor
+          rg_start = start;
+	  rg_end = front;
+	}
+      }
+      else {
+        if (left) { //left connections
+	  rg_start = front;
+	  rg_end = back;
+	}
+	else {
+          rg_start = back;
+	  rg_end = front;
+	}
+      }
+      //cout << "range: " << rg_start << ", " << rg_end << endl;
+      DeetooMessage m = DeetooMessage(rg_start, rg_end, _cache, _r_num, _p_fail);
+      m.visit(next_node, net, visited_net);
+      i++;
+      last = next_addr;
+    } 
   }
-  /**
-   * I ignore the last bit since its direct neighbor, there's no node between start node and direct node.
-   * I will recover this functionality later under churn.
-  if (last_node!=NULL) {
-    DeetooMessage* m_l = new DeetooMessage(_item, last_node->getAddress(_cache),start->getAddress(_cache)-1,_cache);
-    visited_net->add( m_l->visit(last_node, net));
-    delete m_l;
+}
+*/
+void DeetooMessage::visitInRange(AddressedNode* this_node, my_int start, my_int end, map<my_int,AddressedNode*> cons, bool left, Network& net, DeetooNetwork& visited_net) {
+  my_int last_addr;
+  my_int this_addr = this_node->getAddress(_cache);
+  if (left) {
+    last_addr = _r1;
   }
-  */
+  else {
+    last_addr = _r0;
+  }
+  //AddressedNode* last = NULL;
+  my_int rg_start, rg_end;
+  map<my_int, AddressedNode*>::reverse_iterator it;
+  for (it = cons.rbegin(); it != cons.rend(); it++) {
+    AddressedNode* next = it->second;
+    my_int next_addr = next->getAddress(_cache);
     
-  //go to the uppper side.
-  my_int last_upper = _r1;
-  AddressedNode* last_node_up = NULL;
-  std::map<my_int, AddressedNode*>::reverse_iterator it_up;
-  for (it_up=upper_neighbors.rbegin(); it_up!=upper_neighbors.rend(); it_up++)
-  {
-    if (_r0 != _r1) {
-        //We don't need to add the node, it is also done when we add an edge
-        //visited_net.add(it_up->second);
-	visited_net.add(Edge(start, it_up->second) );
-	DeetooMessage m_up = DeetooMessage(it_up->first, last_upper, _cache, _r_num, _p_fail);
-	//Here is the recursion.  Note we don't make a new network
-	m_up.visit(it_up->second, net, visited_net);
-	last_upper = it_up->first -1;
-	last_node_up = it_up->second;
+    if (next == (cons.begin())->second ) {
+      if (left) {
+        rg_start = this_addr;
+	rg_end = last_addr;
+      }
+      else {
+        rg_start = last_addr;
+	rg_end = this_addr;
+      }
+    }
+    else {
+      if (left) {
+        rg_start = next_addr;
+	rg_end = last_addr;
+      }
+      else {
+        rg_start = last_addr;
+        rg_end = next_addr;
+      }
+    }
+    if (rg_start != rg_end) {
+      visited_net.add(Edge(this_node,next) );
+      DeetooMessage m = DeetooMessage(rg_start, rg_end,  _cache, _r_num, _p_fail);
+      m.visit(next, net, visited_net);
+    }
+    if (left) {
+      last_addr = next_addr -1;
+    }
+    else {
+      last_addr = next_addr +1;
     }
   }
-  /**
-   * I ignore the last bit since its direct neighbor, there's no node between start node and direct node.
-   * I will recover this functionality later under churn.
-  if (lastNodeUp!=NULL) 
-  {
-    DeetooMessage* m_u = new DeetooMessage(_item, last_node->getAddress(_cache),_r1, _cache);
-    visited_net->add( m_u->visit(last_node, net));
-    delete m_u;
-  }
-  */
-    
-  return;
 }
+void DeetooMessage::printCons(map<my_int, AddressedNode*> cons) {
+  map<my_int, AddressedNode*>::const_iterator it;
+  for(it = cons.begin(); it != cons.end(); it++) {
+    cout << "(dist,addr): (" << it->first << "," << (it->second)->getAddress(_cache) << ")" << endl;
+  }
+}
+

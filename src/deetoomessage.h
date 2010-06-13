@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <deetoonetwork.h>
 #include <ran1random.h>
 #include <random.h>
+#include <memory>
 
 //#define INT64
 #ifdef INT64
@@ -64,7 +65,11 @@ class DeetooMessage : public Message {
      * @param aNet the network that the message will travel on
      * @return a network consisting of all the nodes and edges crossed in a broadcast.
      **/
-    virtual DeetooNetwork* visit(Node* anode, Network& aNet);	
+    virtual DeetooNetwork* visit(Node* anode, Network& aNet);
+    /**
+     * ui-directional bounded broadcasting
+     */    
+    virtual DeetooNetwork* visitD1(Node* anode, Network& aNet);	
     void cacheItems(AddressedNode* cache_node, DeetooNetwork* o_net);	
     /**
      * This will check if node is in the range (_r0, _r1)
@@ -82,6 +87,9 @@ class DeetooMessage : public Message {
      * In given message, the first node to be visited in the range
      */
     AddressedNode* init_node;
+    bool isReached() { return _pp_success; }
+
+
   protected:
     bool _cache;   //cache or query, cache=true, query=false
     my_int _mid_range;  //(_r0,_r1)/2
@@ -89,14 +97,26 @@ class DeetooMessage : public Message {
     my_int _dist_to_lower;
     Random& _r_num;
     double _p_fail;
+    bool _pp_success;
+    int _neighbor_count;
     /**
      * Since we implement this recursively, this function allows us to not
      * have to allocate and delete a new visited network each time.  This
      * is an optimization for speed and memory
      */
     void visit(AddressedNode* anode, Network& net_to_visit, DeetooNetwork& visited_net);
+    void visitD1(AddressedNode* anode, Network& net_to_visit, DeetooNetwork& visited_net);
+    /**
+     * collect left connections and right connections
+     * returns a pair of connections(left and right).
+     */
+    pair<map<my_int,AddressedNode*>,map<my_int,AddressedNode*> > getConnectionInfo(AddressedNode* t_node, my_int start, my_int end, Network& net);
+    /**
+     * works if @param this_node is in a given range
+     */
+    void visitInRange(AddressedNode* this_node, my_int start, my_int end, map<my_int,AddressedNode*> cons, bool left, Network& net, DeetooNetwork& visited_net);
+    void printCons(map<my_int, AddressedNode*>);
   };
-	
 }
 
 #endif

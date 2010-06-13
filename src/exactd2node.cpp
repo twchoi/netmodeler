@@ -40,6 +40,9 @@ ExactD2Node::ExactD2Node(const my_int addr, set<string> itemset) : AddressedNode
 ExactD2Node::ExactD2Node(const my_int addr, set<string> itemSet, set<my_int> cols, set<my_int> rows) {
   _cols = cols;
   _rows = rows;
+  _addr = addr;
+  //_addr_c_ = addr % AMAX;
+  //_addr_r = (addr - _addr_c) / AMAX; 
   ExactD2Node(addr, itemSet, cols, rows);
 }
 set<my_int> ExactD2Node::getCols() {
@@ -48,11 +51,10 @@ set<my_int> ExactD2Node::getCols() {
 set<my_int> ExactD2Node::getRows() {
   return _rows;
 }
-my_int ExactD2Node::getColAddress() {
-  return _addr_c;
-}
-my_int ExactD2Node::getRowAddress() {
-  return _addr_r;
+pair<my_int,my_int> ExactD2Node::getColRowAddress() {
+  my_int row_addr = _addr % AMAX;
+  my_int col_addr = (_addr - row_addr) / AMAX;
+  return make_pair(col_addr, row_addr);
 }
 
 void ExactD2Node::updateCols(set<my_int> cols) {
@@ -62,11 +64,18 @@ void ExactD2Node::updateRows(set<my_int> rows) {
   _rows = rows; 
 }
 void ExactD2Node::addColRow(my_int addr, bool isCol) {
+  set<my_int>::const_iterator it; 
   if (isCol) {
-    _cols.insert(addr);
+    it = _cols.find(addr);
+    if (it != _cols.end() ) {
+      _cols.insert(addr);
+    }
   }
   else {
-    _rows.insert(addr);
+    it = _rows.find(addr);
+    if (it != _rows.end() ) {
+      _rows.insert(addr);
+    }
   }
 }
 /*

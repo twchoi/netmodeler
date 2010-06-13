@@ -37,10 +37,11 @@ namespace Starsky {
   class Box;
   class ExactD2Node : public AddressedNode {
     protected:
-      my_int _c_address;  //cache address(column)
-      my_int _q_address;  //query address(row)
-      my_int _addr_c;     //column address which tells column position
-      my_int _addr_r;     //row address which tells row position
+      //my_int _c_address;  //cache address(column)
+      //my_int _q_address;  //query address(row)
+      //my_int _addr_c;     //column address which tells column position
+      //my_int _addr_r;     //row address which tells row position
+      my_int _addr;
       set<my_int> _cols;
       set<my_int> _rows;
       Box* _my_box;
@@ -50,8 +51,9 @@ namespace Starsky {
       ExactD2Node(const my_int addr, set<string> itemSet);
       ExactD2Node(const my_int addr, set<string> itemSet, set<my_int> cols, set<my_int> rows);
       //~ExactD2Node();
-      my_int getRowAddress();
-      my_int getColAddress();
+      //my_int getRowAddress();
+      //my_int getColAddress();
+      pair<my_int, my_int> getColRowAddress();
       void setBox(Box* box) { _my_box = box; };
       //void updatebox(Box* box) { _my_box = box; }
       Box* getBox() { return _my_box; };

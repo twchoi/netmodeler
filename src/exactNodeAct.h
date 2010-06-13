@@ -78,6 +78,7 @@ namespace Starsky {
       DeetooNetwork& _qnet;
       double _sq_alpha;
       pair<int, pair<Box*, ExactD2Node*> > getBoxMin(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end);
+      void printNetworkInfo(Network& net, bool bo);
       /*
        *@param isLoU true if a node is left or upper
        */

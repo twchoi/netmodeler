@@ -41,14 +41,14 @@ namespace Starsky {
   class Box  {
     protected:
       map<my_int, ExactD2Node*> _nodemap;
-      my_int _c_addr;
-      my_int _r_addr;
-      my_int _c_start;
-      my_int _c_end;
-      my_int _r_start;
-      my_int _r_end;
-      my_int _c_mid;
-      my_int _r_mid;
+      my_int _start; //address
+      my_int _end;   //address
+      my_int _c_start;  //column address of start
+      my_int _c_end;    //column address of end
+      my_int _r_start;  //row address of start
+      my_int _r_end;    //row address of end
+      my_int _c_mid;    // column address in middle
+      my_int _r_mid;    // row address in middle
       int _max;
       int _min;
       //string _position;
@@ -80,7 +80,13 @@ namespace Starsky {
       vector<my_int> getSplittedBoundary(bool isColumn);
       //pair<my_int, my_int> getEmptyPosition();
       my_int getMiddle(bool isCol);
-      pair<my_int, my_int> getRange(bool isCol);
+      map<string,int> getPositionMap() { return _positionmap; };
+      my_int colrowToAddr(my_int col, my_int row);
+      pair<my_int, my_int> addrToColRow(my_int addr);
+      my_int getMid(my_int start, my_int end);
+      pair<my_int, my_int> getBroadcastRange(bool isCol);
+      // returns (_c_start, _c_end) if col, (_r_start, _r_end) if row
+      pair<my_int, my_int> getAddrOfElement(bool isCol) ;
   };
 }
 #endif

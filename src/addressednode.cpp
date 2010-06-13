@@ -99,7 +99,7 @@ bool AddressedNode::searchObject(string& qObj)
   }
   return ret;
 }
-void AddressedNode::insertItem(std::string& item)
+void AddressedNode::insertItem(std::string item)
 {
     _itemSet.insert(item);
 }
@@ -161,4 +161,116 @@ my_int AddressedNode::getRangeSize(double cq_size) {
   range1 = (my_int) ( (end_cr * AMAX) + AMAX -1 );
   range_size = range1 - range0;
   return range_size;
+}
+    /** Utility method to determine if this address is between start and end
+     *  from the left, i.e. it satisfies the following constraints:
+     *  1. Is to the left of start, and
+     *  2. Is to the right of end.
+     *  @return 1 in case its within
+     *  @return -1 in case it is not
+     */
+/*
+bool AddressedNode::isBetweenFromLeft(AddressedNode start, AddressedNode end) {
+  //my_int comp = start - end;
+  if ( comp < 0 ) {
+    return (this > start) && (this < end)  
+  }
+  else if ( comp == 0 ) {
+    return false;
+  }
+  else {
+    return (this > start) || (this < end)
+  }
+}
+*/
+bool AddressedNode::isBetweenFromLeft(my_int start, my_int end, bool cq) {
+  //my_int comp = start - end;
+  my_int m_addr;
+  if (cq) { m_addr = _c_address; }
+  else { m_addr = _q_address; }
+
+  if ( end < start ) {
+    return (m_addr > start) || (m_addr < end) ; 
+  }
+  else if ( start == end ) {
+    return false;
+  }
+  else {
+    return (m_addr > start) && (m_addr < end);
+  }
+}
+bool AddressedNode::isLeftOf(AddressedNode* target, bool cq) {
+  my_int a = this->getAddress(cq);
+  my_int b = target->getAddress(cq);
+  my_int half = WMAX /2 +1;
+  if (a > b ) {
+    return (b-a) < half; 
+  }
+  else {
+    return (a-b) > half;
+  }
+}
+bool AddressedNode::isRightOf(AddressedNode* target, bool cq) {
+  my_int a = this->getAddress(cq);
+  my_int b = target->getAddress(cq);
+  my_int half = WMAX /2 +1;
+  if (b > a ) {
+    return (b-a) < half; 
+  }
+  else {
+    return (a-b) > half;
+  }
+}
+my_int AddressedNode::distanceTo(AddressedNode* target,bool cq) {
+    my_int addr_a = this->getAddress(cq);
+    my_int addr_b = target->getAddress(cq);
+    my_int sm, bg, dt;
+    sm = std::min(addr_a, addr_b);
+    bg = std::max(addr_a, addr_b);
+    dt = std::min ((bg - sm), ( WMAX - bg + sm +1));
+    return dt;
+}
+    /**
+     * The Left (increasing, clockwise) distance to
+     * the given AHAddress
+     * @param addr the AHAddress to compute the distance to
+     * @return the distance
+     */
+
+my_int AddressedNode::leftDistanceTo(AddressedNode* target, bool cq) {
+  my_int n_x = this->getAddress(cq);
+  my_int n_y = target->getAddress(cq);
+  //cout << "n_x, n_y: " << n_x << ", " << n_y << "n_y-n_x: " << n_y - n_x << endl;
+  my_int dist;
+  if (n_y > n_x) {
+    //The given address is larger than us, just subtract
+    dist = n_y - n_x;
+  }
+  else {
+    //We need to add AHAddress.Full to the result:
+    dist = n_y - n_x + WMAX + 1;
+  }
+  //cout << "dist: " << dist << endl;
+  return dist;
+}
+    /**
+     * The Right (decreasing, counterclockwise) distance to
+     * the given AHAddress
+     * @param addr the AHAddress to compute the distance to
+     * @return the distance
+     */
+my_int AddressedNode::rightDistanceTo(AddressedNode* target, bool cq) {
+  my_int n_x = this->getAddress(cq);
+  my_int n_y = target->getAddress(cq);
+  my_int dist;
+  if (n_y < n_x) {
+    //The given address is larger than us, just subtract
+    dist = n_y - n_x;
+  }
+  else {
+    //We need to add AHAddress.Full to the result:
+    dist = n_y - n_x + WMAX;
+  }
+  return dist;
+
 }

@@ -59,13 +59,12 @@ void DeetooNetwork::formRing(const std::map<my_int, AddressedNode*>& nodeMap) {
   add(Edge(last,first) );
 }
 
-void DeetooNetwork::makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache, int no_con) {
+void DeetooNetwork::makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache) {
   auto_ptr<NodeIterator> ni( getNodeIterator() );
   while(ni->moveNext() ) {
     AddressedNode* nodei = dynamic_cast<AddressedNode*> (ni->current() );
     my_int shortcut_address = nodei->getAddress(cache);
-    int no_current_con = 0;
-    while (shortcut_address == nodei->getAddress(cache) && (no_current_con <= no_con) ) {
+    while (shortcut_address == nodei->getAddress(cache) ) {
         double x = _r_short.getDouble01();
 	//my_int net_size = guessNetSize(nodei, cache);
 	//my_int net_size = guessNetSizeLog(nodei, cache);
@@ -76,13 +75,9 @@ void DeetooNetwork::makeShortcutConnection(const std::map<my_int, AddressedNode*
 	shortcut_address = nodej->getAddress(cache);
         if ((nodei->getAddress(cache) != nodej->getAddress(cache)) && !(getEdge(nodei, nodej)) && !(getEdge(nodej, nodei))){
           add( Edge(nodei,nodej) );
-	  no_current_con++;
 	}
     }
   }
-}
-void DeetooNetwork::makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache) {
-  makeShortcutConnection(nd_map, cache, 1);
 }
 AddressedNode* DeetooNetwork::returnShortcutNode(AddressedNode* node, const std::map<my_int, AddressedNode*>& nd_map, bool cache) {
   AddressedNode* nodej;
@@ -230,7 +225,7 @@ my_int DeetooNetwork::distanceTo(my_int addr_a, my_int addr_b) {
     my_int sm, bg, dt;
     sm = std::min(addr_a, addr_b);
     bg = std::max(addr_a, addr_b);
-    dt = std::min( (bg-sm),( WMAX - bg + sm + 1) );
+    dt = std::min( (bg-sm),( (WMAX+1) - bg + sm) );
     return dt;
 }
 
@@ -494,14 +489,7 @@ void DeetooNetwork::createEvenNet(int net_size) {
 } 
 
 /**
-  * This method returns an address for newly joining node.
-  * An address is taken by the place with maximum inter-node distance 
-    from possible places.
-  * @param no_can the number of candidate places.
-  * @param cache true for cache, false for query
-*/
-
-my_int DeetooNetwork::getUniformAddress(int no_can) {
+my_int DeetooNetwork::getUniformAddress(int no_can, bool cache) {
   int result_dist = 0;
   my_int ret_addr;
   set<my_int> addr_set;
@@ -513,10 +501,8 @@ my_int DeetooNetwork::getUniformAddress(int no_can) {
   std::map<my_int, AddressedNode*>::const_iterator it_up;
   set<my_int>::const_iterator set_it;
   my_int up_addr, down_addr;
-  int dist2up, dist2down;
-  //my_int sum_dist;
-  my_int mim_dist;
-  map<my_int,my_int> distances;
+  int dist2up, dist2down, sum_dist;
+  map<my_int,int> distances;
   distances.clear();
   for (set_it=addr_set.begin(); set_it != addr_set.end(); set_it++) {
     it_up = node_map.upper_bound(*set_it);
@@ -524,35 +510,29 @@ my_int DeetooNetwork::getUniformAddress(int no_can) {
     down_addr = (it_up--)->first;
     dist2up = distanceTo(up_addr, *set_it);
     dist2down = distanceTo(down_addr, *set_it);
-    //sum_dist = dist2up + dist2down;
-    //distances[*set_it] = sum_dist;
-    mim_dist = std::min(dist2up, dist2down);
-    distances[*set_it] = mim_dist;
-    //cout << "distance: " << sum_dist << ", address: " << *set_it << endl;
-    //cout << "distance: " << mim_dist << ", address: " << *set_it << endl;
+    sum_dist = dist2up + dist2down;
+    distances[r_addr] = sum_dist;
   }
-  //cout << "distances.count: " << distances.size() << endl;
-  map<my_int, my_int>::const_iterator map_it;
+  map<my_int, int>::const_iterator map_it;
   for (map_it = distances.begin(); map_it != distances.end(); map_it++) {
     my_int th_addr = map_it->first;
-    my_int th_dist = map_it->second;
-    if (th_dist > result_dist) {
+    int th_dist = map_it->second;
+    if (th_dist > result) {
       ret_addr = th_addr;
-      result_dist = th_dist;
+      result = th_dist;
     }
-    //cout << "th_addr: " << th_addr << ", th_dist: " << th_dist << ", ret_addr: " << ret_addr << ", result_dist: " << result_dist << endl;
   }
-  return ret_addr;
+  return result;
 }
-
+*/
 /*
  * createEvenNet is for making network with evenly distributed nodes in address space
  * When a new node join, maximize minimum distance to the neighbors 
  * by picking up two candidate addresses and finally select an address 
  * with longer minimum distance to the neighbors.
  */
-
-void DeetooNetwork::createEvenNet(int net_size, int no_can) {
+/**
+void DeetooNetwork::createEvenNet(int net_size, my_int new_addr) {
   node_map.clear();
   std::set<std::string> items;
   items.clear();
@@ -568,27 +548,22 @@ void DeetooNetwork::createEvenNet(int net_size, int no_can) {
     }
   }
   //add all the others.
-
+  std::map<my_int, AddressedNode*>::const_iterator it_up;
   while( node_map.size() < net_size) {
     //cout << "------------------------------" << endl;
     //cout << "node_map.size(): " << node_map.size() << endl;
     //first location
-    //cout << "start getUniformAddress" << endl;
-    my_int new_addr = getUniformAddress(no_can);
-    //cout << "end getUniformAddress" << endl;
-    //cout << new_addr << endl;
-    AddressedNode* new_node = new AddressedNode(new_addr,items);
-    //cout << "in create: new addr: " << new_addr << endl;
+    AddressedNode* new_node = new AddressedNode(r_addr1,items);
+    //cout << "new addr: " << new_addr << endl;
     if (node_map.find(new_addr) == node_map.end() && new_addr != 0) {
       node_map[new_addr] = new_node;	    
       add(new_node);
     }
   }
-  //cout << "1111111111111" << endl;
   formRing(node_map);
   makeShortcutConnection(node_map, true);
 } 
-
+*/
 
 vector<int> DeetooNetwork::getNeighborDistHist(int bins) const {
 
@@ -656,3 +631,104 @@ void DeetooNetwork::printVector(std::vector<int> my_vec) {
   }
   cout << endl;
 }
+
+int DeetooNetwork::brokenEdges(float p) {
+  //cout << "initial edge size: " << getEdgeSize() << endl;
+  int no_removed = 0;
+  auto_ptr<EdgeIterator> ei( getEdgeIterator() );
+  while (ei->moveNext() ) {
+    Edge* this_edge = ei->current();
+    float p_fail = _r_short.getDouble01();
+    if ( p_fail < p ) {
+      //cout << "p: " << p << " p_fail(ran_no): " << p_fail << endl;
+      no_removed += this->remove(this_edge);
+      //cout << "no_removed: " << no_removed << endl;
+    }
+  }
+  return no_removed;
+}
+/*
+ * Give some network inconsistency 
+ * In a given probability, each node's left neighbor connection is lost.
+ * Then, the node establish new connection to the next nearest neighbor on the left side.
+ */
+void DeetooNetwork::rewireEdges(float p, bool isCache) {
+  auto_ptr<NodeIterator> ni (getNodeIterator() );
+  while (ni->moveNext() ) {
+    AddressedNode* this_node = dynamic_cast<AddressedNode*> (ni->current() );
+    /*
+    float p_fail = _r_short.getDouble01();
+    if (p_fail < p) {
+      connectToTheNextLeft(this_node, isCache);
+    }
+    */
+    float p_fail = _r_short.getDouble01();
+    if (p_fail < p) {
+      connectToTheNextRight(this_node, isCache);
+    }
+  }
+}
+/*
+ * remove edge to the left node
+ *
+ * @param this_node a node whose left connection is lost and makes new connection to 
+ * the next left node.
+ * @param isCache true if caching network, false if querying network
+ * 
+ */
+void DeetooNetwork::connectToTheNextLeft(AddressedNode* this_node, bool isCache) {
+  my_int this_addr = this_node->getAddress(isCache);
+  std::map<my_int, AddressedNode*>::const_iterator nm_it = node_map.upper_bound(this_addr);
+  if ( nm_it != node_map.end() ) { 
+    remove(Edge(this_node,nm_it->second) );
+    nm_it++;
+    if (nm_it != node_map.end() ) {
+      add(Edge(this_node,nm_it->second) );
+    }
+    else { // left node is the last node in the network.
+	   // Thus, the first node in the network is new neighbor
+      nm_it = node_map.begin();
+      add(Edge(this_node,nm_it->second) );
+    }
+  }
+  else { //this_node is the last node in the network.
+    nm_it = node_map.begin();
+    remove(Edge(this_node,nm_it->second) );
+    nm_it++;
+    add(Edge(this_node, nm_it->second) );
+  }
+}
+/*
+ * remove edge to the right node
+ *
+ * @param this_node a node whose right connection is lost and makes new connection to 
+ * the next right node.
+ * @param isCache true if caching network, false if querying network
+ * 
+ */
+void DeetooNetwork::connectToTheNextRight(AddressedNode* this_node, bool isCache) {
+  my_int this_addr = this_node->getAddress(isCache);
+  std::map<my_int, AddressedNode*>::const_iterator nm_it = node_map.lower_bound(this_addr);
+  if ( nm_it != node_map.begin() ) { 
+    nm_it--;
+    remove(Edge(this_node,nm_it->second) );
+    if (nm_it != node_map.begin() ) {
+      nm_it--;
+      add(Edge(this_node,nm_it->second) );
+    }
+    else { // right node is the last node in the network.
+	   // Thus, the first node in the network is new neighbor
+      nm_it = node_map.end();
+      nm_it--;
+      add(Edge(this_node,nm_it->second) );
+    }
+  }
+  else { //this_node is the last node in the network.
+    nm_it = node_map.end();
+    nm_it--;
+    remove(Edge(this_node,nm_it->second) );
+    nm_it--;
+    add(Edge(this_node, nm_it->second) );
+  }
+}
+

@@ -84,8 +84,8 @@ class DeetooNetwork : public Network {
 	 *@param cache if cache net, true, else if query net, false
 	 *make shortcut connection 
 	 */
-	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache);
-	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map, bool cache, int no_con);
+	void makeShortcutConnection(const std::map<my_int, AddressedNode*>& nd_map,
+                                    bool cache);
 	/**
 	 *@param cache if cache net, true, else if query net, false
 	 *make shortcut connection 
@@ -139,15 +139,19 @@ class DeetooNetwork : public Network {
 	 * when a new node join, maximize minimum distance to the neighbors' address by picking up two candidate addresses then finally select and address with longer minimum distance to the neighbors.
 	 */
 	void createEvenNet(int net_size);
-	void createEvenNet(int size, int no_can);
-	my_int getUniformAddress(int no_can);
+	void createEvenNet(int size, my_int addr);
+	my_int getUniformAddress(int no_can, bool cache);
 	void createNullNet();
 	int getCountLog() { return _count_log; }
 	int getCountMedian() { return _count_median; }
+	int brokenEdges(float p);
+	void rewireEdges(float p, bool isCache);
     protected:
 	Random& _r_short;
 	int _count_log;
 	int _count_median;
+	void connectToTheNextLeft(AddressedNode* this_node, bool isCache);
+	void connectToTheNextRight(AddressedNode* this_node, bool isCache);
 };
 	
 }
