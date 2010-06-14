@@ -475,25 +475,19 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
       //update and add this node to new box.
       my_int addr = node->getAddress(1);
       if (new_box->inBox(addr) ) {
-      cout << " new box" << endl;
         new_box->addNode(node,_cnet);
-        //node->setBox(new_box);
         current->deleteNode(node);
 	cout << "node's box was : " << node->getBox()->getBoundary().first<< ": " <<  node->getBox()->getBoundary().second<< endl;
 	node->setBox(new_box);
 	cout << "node's box is now : " << node->getBox()->getBoundary().first << ": " <<  node->getBox()->getBoundary().second<< endl;
-      cout << " new box" << endl;
       }
       else if (current->inBox(addr) ) {
-      cout << " current box" << endl;
         current->addNode(node,_cnet);
       cout << " current box" << endl;
-        //node->setBox(current);
 	cout << "node's box was : " << node->getBox()->getBoundary().first<< ": " <<  node->getBox()->getBoundary().second<< endl;
         new_box->deleteNode(node);
 	node->setBox(current);
 	cout << "node's box is now : " << node->getBox()->getBoundary().first << ": " <<  node->getBox()->getBoundary().second<< endl;
-      cout << " current box" << endl;
       }
     //}
     it_no++;
