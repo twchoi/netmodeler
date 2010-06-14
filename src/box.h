@@ -87,6 +87,7 @@ namespace Starsky {
       pair<my_int, my_int> getBroadcastRange(bool isCol);
       // returns (_c_start, _c_end) if col, (_r_start, _r_end) if row
       pair<my_int, my_int> getAddrOfElement(bool isCol) ;
+      void printNodes();
   };
 }
 #endif

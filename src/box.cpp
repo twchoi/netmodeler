@@ -63,18 +63,26 @@ void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
     }
   }
   */
-  _nodemap[addr] = n;
-  string pos = getPosition(n);
-  //cout << "THIS POSITION?????????????   " << pos << endl;
-  _positionmap[pos] = _positionmap[pos] + 1;
+  map<my_int, ExactD2Node*>::iterator idx = _nodemap.find(addr);
+  if (idx == _nodemap.end() ) {
+    _nodemap[addr] = n;
+    string pos = getPosition(n);
+    //cout << "THIS POSITION?????????????   " << pos << endl;
+    _positionmap[pos] = _positionmap[pos] + 1;
+  }
 
 }
 void Box::deleteNode(ExactD2Node* n) {
   my_int addr = n->getAddress(1);
   map<my_int, ExactD2Node*>::iterator idx = _nodemap.find(addr);
-  _nodemap.erase(idx);
-  string pos = getPosition(n);
-  _positionmap[pos] = _positionmap[pos] -1;
+  if (idx != _nodemap.end() ) {
+    _nodemap.erase(idx);
+    string pos = getPosition(n);
+    _positionmap[pos] = _positionmap[pos] -1;
+  }
+  else {
+    cout << " the node is not in this box" << endl;
+  }
 }
 void Box::clearNodes() {
   _nodemap.clear();
@@ -251,23 +259,27 @@ string Box::getDiagonalPosition(string pos) {
   }
 }
 vector<my_int> Box::getSplittedBoundary(bool isColumn) {
+  cout << "~~~~~~~~~~~~~~~~~~~~~~ splitedboundary~~~~~~~~~~" << endl;
   my_int start1, start2, end1, end2;
+  cout << "start: " << _start << ", end: " << _end << endl;
   vector<my_int> result;
   if (isColumn) {
     start1 = _start;
     end1 = colrowToAddr(_c_mid, _r_end);
-    start2 = colrowToAddr(_c_mid, _r_start);
+    start2 = colrowToAddr((_c_mid+1), _r_start);
     //end1 = _c_mid * AMAX + _r_end; 
     //start2 = _c_mid * AMAX + _r_start;
     end2 = _end;  
+    cout << "COL::::end1: " << end1 << " start2: " << start2 << endl;
   }
   else {
     start1 = _start;
     //end1 = _c_end * AMAX + _r_mid; 
     //start2 = _c_start * AMAX + _r_mid;
     end1 = colrowToAddr(_c_end, _r_mid);
-    start2 = colrowToAddr(_c_start, _r_mid);
+    start2 = colrowToAddr((_c_start+1), _r_mid);
     end2 = _end;  
+    cout << "ROW::::end1: " << end1 << " start2: " << start2 << endl;
   }  
 
   result.push_back(start1);
@@ -308,4 +320,12 @@ pair<my_int, my_int> Box::getBroadcastRange(bool isCol) {
 pair<my_int, my_int> Box::getAddrOfElement(bool isCol) {
   if (isCol) { return make_pair(_c_start, _c_end); }
   else { return make_pair(_r_start, _r_end); }
+}
+void Box::printNodes() {
+  map<my_int, ExactD2Node*>::const_iterator it;
+  cout << "nodes in this box are: " ;
+  for (it = _nodemap.begin(); it != _nodemap.end(); it++) {
+    cout << it->first << ", " ;
+  }
+  cout << endl;
 }
