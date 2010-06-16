@@ -43,7 +43,7 @@ ExactD2Node::ExactD2Node(const my_int addr, set<string> itemSet, set<my_int> col
   _addr = addr;
   //_addr_c_ = addr % AMAX;
   //_addr_r = (addr - _addr_c) / AMAX; 
-  ExactD2Node(addr, itemSet, cols, rows);
+  ExactD2Node(addr, itemSet);
 }
 set<my_int> ExactD2Node::getCols() {
   return _cols;

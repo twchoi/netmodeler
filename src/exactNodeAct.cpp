@@ -294,28 +294,25 @@ void ExactNodeJoinAction::Execute() {
 	//
 	cout << "min box is  full            SPLIT!!!!!!!!!!!!1" << endl;
 	string position = (nei->getBox())->getPosition(nei);
-	bool isLoU; // left if column, upper if row
-	if (moreCols && ( position == "lu" || position == "lb") ) {
-          isLoU = true;
-	}
-	else { isLoU = false; }
-	if (!moreCols && ( position == "lu" || position == "ru") ) {
-          isLoU = true;
-	}
-	else { isLoU = false; }
 	
-	if (moreCols) {
-	  split(_cnet, nei, start, end, moreCols, isLoU);
-	}
-	else {
-	  split(_qnet, nei, start, end, moreCols, isLoU);
-	}
+	pair<Box*, Box*> boxes = split(_cnet, nei, start, end, moreCols);
+        Box* lu = boxes.first;
+        Box* rb = boxes.second;
 	// network is splitted
 	// join with c_addr in splitted box at a proper position
 	// box is this_box
 	// node is me
-        my_int addr = this_box->getJoinAddress(_r);
+	Box* my_box;
+	if (lu->count() >= rb->count() ) {
+          my_box = rb;
+	}
+	else {
+          my_box = lu;
+	}
+        my_int addr = my_box->getJoinAddress(_r);
 	selectednode = new ExactD2Node(addr, items);
+	selectednode->setBox(my_box);
+
 	//selectednode->updateColRow(
 	delete me;
         
@@ -412,7 +409,8 @@ pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwor
   return make_pair(box_min, result);
   //return result;
 }
-void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn, bool isLeft) {
+//void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn) {
+pair<Box*, Box*> ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn) {
   
   auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, isColumn, _r, 0) );
   cout << "*******************************in split method" << endl;
@@ -426,6 +424,9 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
   my_int past_mid = (node->getBox())->getMiddle(isColumn);
   my_int past_mid_plus_one = past_mid + 1;
   Box *current;  
+
+  Box *box_lu; //new box left or upper
+  Box *box_rb; // new box right or bottom
   int it_no = 0;
   cout << "visited_net size: " << visited_net->getNodeSize() << endl;
   while (nit->moveNext() ) {
@@ -437,7 +438,6 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
     cout << "-------------------------------------" << endl;
     cout << "iter_no: " << it_no << ", current_node: " << node->getAddress(1) << endl;
     //pair<my_int, my_int> boundary = current->getBoundary();
-    Box *new_box;
 
     cout << "past range: " << past_start_ele << ", " << past_end_ele << ", mid: " << past_mid << endl;
     cout << "this range: " << e_start << ", " << e_end << endl;
@@ -456,37 +456,35 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
       my_int start2 = new_boundary[2];
       my_int end2 = new_boundary[3];
       cout << start1 << "\t" << end1 << "\t" << start2 << "\t" << end2 << endl;
-      if(isLeft) { // left (col) or upper (row)
-        current->update(start1, end1);
-	new_box = new Box(start2, end2);
-      }
-      else {
-        current->update(start2, end2);
-	new_box = new Box(start1, end1);
-      }
+
+      // make 2 new boxes.
+      delete current;
+      box_lu = new Box(start1, end1);
+      box_rb = new Box(start2, end2);
       cout << "splitted," << endl; 
-      pair<my_int, my_int> bound_cur = current->getBoundary();
-      pair<my_int, my_int> bound_new = new_box->getBoundary();
-      cout << "current box's range: " << bound_cur.first << ", " << bound_cur.second << endl;
-      cout << "new_box's range: " << bound_new.first << ", " << bound_new.second << endl;
+      pair<my_int, my_int> bound_lu = box_lu->getBoundary();
+      pair<my_int, my_int> bound_rb = box_rb->getBoundary();
+      cout << "box_lu's range: " << bound_lu.first << ", " << bound_lu.second << endl;
+      cout << "box_rb's range: " << bound_rb.first << ", " << bound_rb.second << endl;
     }
     //else {
       //box is already splitted
       //update and add this node to new box.
       my_int addr = node->getAddress(1);
-      if (new_box->inBox(addr) ) {
-        new_box->addNode(node,_cnet);
-        current->deleteNode(node);
+      if (box_rb->inBox(addr) ) {
+        box_rb->addNode(node,_cnet);
+        box_lu->deleteNode(node);
+      cout << " box_rb box" << endl;
 	cout << "node's box was : " << node->getBox()->getBoundary().first<< ": " <<  node->getBox()->getBoundary().second<< endl;
-	node->setBox(new_box);
+	node->setBox(box_rb);
 	cout << "node's box is now : " << node->getBox()->getBoundary().first << ": " <<  node->getBox()->getBoundary().second<< endl;
       }
-      else if (current->inBox(addr) ) {
-        current->addNode(node,_cnet);
-      cout << " current box" << endl;
+      else if (box_lu->inBox(addr) ) {
+        box_lu->addNode(node,_cnet);
+      cout << " box_lu box" << endl;
 	cout << "node's box was : " << node->getBox()->getBoundary().first<< ": " <<  node->getBox()->getBoundary().second<< endl;
-        new_box->deleteNode(node);
-	node->setBox(current);
+        box_rb->deleteNode(node);
+	node->setBox(box_lu);
 	cout << "node's box is now : " << node->getBox()->getBoundary().first << ": " <<  node->getBox()->getBoundary().second<< endl;
       }
     //}
@@ -494,16 +492,16 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
     //past = current;
     //need to update cols, rows
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    cout << "current box's count: " << current->count() << ", new's count: " << new_box->count() << endl;
+    cout << "box_lu box's count: " << box_lu->count() << ", new's count: " << box_rb->count() << endl;
     cout << "!!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!!!!!!!!!" << endl;
-      pair<my_int, my_int> bound_cur = current->getBoundary();
-      pair<my_int, my_int> bound_new = new_box->getBoundary();
-      cout << "current box's range: " << bound_cur.first << ", " << bound_cur.second << endl;
-      cout << "new_box's range: " << bound_new.first << ", " << bound_new.second << endl;
-      cout << "current's nodes: " << endl;
-      current->printNodes();
-      cout << "new_box's nodes: " << endl;
-      new_box->printNodes();
+      pair<my_int, my_int> bound_cur = box_lu->getBoundary();
+      pair<my_int, my_int> bound_new = box_rb->getBoundary();
+      cout << "box_lu box's range: " << bound_cur.first << ", " << bound_cur.second << endl;
+      cout << "box_rb's range: " << bound_new.first << ", " << bound_new.second << endl;
+      cout << "box_lu's nodes: " << endl;
+      box_lu->printNodes();
+      cout << "box_rb's nodes: " << endl;
+      box_rb->printNodes();
   auto_ptr<NodeIterator> nit1 (visited_net->getNodeIterator() );
   while (nit1->moveNext() ) {
     ExactD2Node* node1 = dynamic_cast<ExactD2Node*> (nit1->current() );
@@ -518,6 +516,7 @@ void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int st
     current = node->getBox();
     cout << "node : " << node1->getAddress(1) << "'s box is "<< (current->getBoundary()).first << ": " << (current->getBoundary()).second<< endl;
   }
+  return make_pair(box_lu, box_rb);
 
 }
 

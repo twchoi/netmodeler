@@ -82,7 +82,8 @@ namespace Starsky {
       /*
        *@param isLoU true if a node is left or upper
        */
-      void split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn, bool isLeft);
+      //void split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn);
+      pair<Box*, Box*> split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn);
   };
 
   // action for caching objects in the network
