@@ -34,15 +34,11 @@ using namespace std;
   #define WMAX 4294967295L
 #endif
 
-Box::Box(my_int start, my_int end) {
-  _start = start;
-  _end = end;
-  pair<my_int, my_int> start_cr = addrToColRow(start);
-  _c_start = start_cr.first;
-  _r_start = start_cr.second;
-  pair<my_int, my_int> end_cr = addrToColRow(end);
-  _c_end = end_cr.first;
-  _r_end = end_cr.second;
+Box::Box(my_int c_start, my_int c_end, my_int r_start, my_int r_end) {
+  _c_start = c_start;
+  _c_end = c_end;
+  _r_start = r_start;
+  _r_end = r_end;
   _c_mid = getMid(_c_start, _c_end);
   _r_mid = getMid(_r_start, _r_end);
   setEmptyPositionMap();
@@ -54,7 +50,8 @@ void Box::setEmptyPositionMap() {
   _positionmap["lb"] = 0;
 }
 void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
-  my_int addr = n->getAddress(1);
+  my_int c_addr = n->getAddress(1);
+  my_int q_addr = n->getAddress(0);
   /*
   map<my_int, ExactD2Node*>::const_iterator nit;
   for (nit = _nodemap.begin(); nit != _nodemap.end(); nit++) {
@@ -62,21 +59,36 @@ void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
       net.add(Edge(n,nit->second) );
     }
   }
-  */
-  map<my_int, ExactD2Node*>::iterator idx = _nodemap.find(addr);
-  if (idx == _nodemap.end() ) {
-    _nodemap[addr] = n;
+  map<my_int, ExactD2Node*>::iterator c_idx = _c_nodemap.find(c_addr);
+  if (idx == _c_nodemap.end() ) {
+    _c_nodemap[c_addr] = n;
     string pos = getPosition(n);
     //cout << "THIS POSITION?????????????   " << pos << endl;
     _positionmap[pos] = _positionmap[pos] + 1;
   }
+  map<my_int, ExactD2Node*>::iterator q_idx = _q_nodemap.find(addr);
+  if (idx == _q_nodemap.end() ) {
+    _q_nodemap[addr] = n;
+    //string pos = getPosition(n);
+    //cout << "THIS POSITION?????????????   " << pos << endl;
+    //_positionmap[pos] = _positionmap[pos] + 1;
+  }
+  */
+  set<ExactD2Node*>::const_iterator idx = _nodeset.find(n);
+  if (idx == _nodeset.end() ) {
+    _nodeset.insert(n);
+    string pos = getPosition(n);
+    _positionmap[pos] = _positionmap[pos] + 1;
+  }
+  else {
+    // this node is already in this box
+  }
 
 }
 void Box::deleteNode(ExactD2Node* n) {
-  my_int addr = n->getAddress(1);
-  map<my_int, ExactD2Node*>::iterator idx = _nodemap.find(addr);
-  if (idx != _nodemap.end() ) {
-    _nodemap.erase(idx);
+  set<ExactD2Node*>::const_iterator idx = _nodeset.find(n);
+  if (idx != _nodeset.end() ) {
+    _nodeset.erase(idx);
     string pos = getPosition(n);
     _positionmap[pos] = _positionmap[pos] -1;
   }
@@ -84,13 +96,18 @@ void Box::deleteNode(ExactD2Node* n) {
     cout << " the node is not in this box" << endl;
   }
 }
-void Box::clearNodes() {
-  _nodemap.clear();
+void Box::resetNodes() {
+  _nodeset.clear();
 }
-bool Box::inBox(my_int addr) {
+bool Box::inBox(ExactD2Node* node) {
+  my_int addr = node->getAddress(1); // we only need caching address
+                                       // because we can get both column and row elements from it
+				       // column element is at caching side
+				       // row element is at querying side
+  //break address to column and row
   pair<my_int,my_int> cr_addrs = addrToColRow(addr);
-  my_int addr_c =  cr_addrs.first;
-  my_int addr_r =  cr_addrs.second;
+  my_int addr_c =  cr_addrs.first; //this is node's position in caching node (column)
+  my_int addr_r =  cr_addrs.second; // this is node's position in querying node (row)
   if (( (addr_c >= _c_start) && (addr_c < _c_end) ) && ((addr_r >= _r_start) && (addr_r < _r_end) ) ) {
     return true;
   }
@@ -276,8 +293,10 @@ vector<my_int> Box::getSplittedBoundary(bool isColumn) {
     start1 = _start;
     //end1 = _c_end * AMAX + _r_mid; 
     //start2 = _c_start * AMAX + _r_mid;
-    end1 = colrowToAddr(_c_end, _r_mid);
-    start2 = colrowToAddr((_c_start+1), _r_mid);
+    //end1 = colrowToAddr(_c_end, _r_mid);
+    //start2 = colrowToAddr((_c_start+1), _r_mid);
+    end1 = colrowToAddr(_r_mid,_c_end);
+    start2 = end1 + 1;
     end2 = _end;  
     cout << "ROW::::end1: " << end1 << " start2: " << start2 << endl;
   }  
@@ -328,4 +347,12 @@ void Box::printNodes() {
     cout << it->first << ", " ;
   }
   cout << endl;
+}
+bool Box::splitColumn() {
+  if ((_c_end - _c_start) > (_r_end - _r_start) ) {
+    return true;
+  }
+  else {
+    return false;
+  }
 }

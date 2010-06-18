@@ -231,9 +231,10 @@ void ExactNodeJoinAction::Execute() {
       cout << "not in any neighboring nodes' box" << endl;
     }
 
-    cols = nei->getCols();
-    rows = nei->getRows();
-    bool moreCols = (cols.size() >= rows.size() );
+    //cols = nei->getCols();
+    //rows = nei->getRows();
+    //bool moreCols = (cols.size() >= rows.size() );
+    bool moreCols = nei->getBox()->splitColumn();
 
     //cout << "box size: " << this_box->count() << endl;
     if ( this_box->count() >= BOX_M ) {
@@ -269,19 +270,23 @@ void ExactNodeJoinAction::Execute() {
         pair<my_int, my_int> range = nei_box->getBroadcastRange(0);
 	start = range.first;
 	end = range.second;
+	cout << "for query net, min box range is: " << start << ", " << end << endl;
         min_box = getBoxMin(_qnet, nei, start, end);
       }
 
+      pair<Box*, ExactD2Node*> box_info = min_box.second;
+      Box* box = box_info.first;
       cout << "N(min_box): " << min_box.first << endl;
       if (min_box.first < BOX_M) {
 	cout << "min box is not full" << endl;
 	// number of nodes in min_box is smaller than maximum.
 	// new node should join in this box at splittable position
-	pair<Box*, ExactD2Node*> box_info = min_box.second;
-	Box* box = box_info.first;
         // The node can be join in a proper position in the min_box.
 	my_int addr = box->getJoinAddress(_r);
-	selectednode = new ExactD2Node(addr, items, cols, rows);
+	cout << "cols size: " << cols.size() << "rows size: " << rows.size() << endl;
+	//selectednode = new ExactD2Node(addr, items, cols, rows);
+	selectednode = new ExactD2Node(addr, items);
+	cout << "cols size: " << selectednode->getCols().size() << "rows size: " << selectednode->getRows().size() << endl;
 	delete me;
       }
       else {
@@ -295,6 +300,7 @@ void ExactNodeJoinAction::Execute() {
 	cout << "min box is  full            SPLIT!!!!!!!!!!!!1" << endl;
 	string position = (nei->getBox())->getPosition(nei);
 	
+	cout << "for split, range is: " << start << ", " << end << endl;
 	pair<Box*, Box*> boxes = split(_cnet, nei, start, end, moreCols);
         Box* lu = boxes.first;
         Box* rb = boxes.second;
@@ -311,6 +317,8 @@ void ExactNodeJoinAction::Execute() {
 	}
         my_int addr = my_box->getJoinAddress(_r);
 	selectednode = new ExactD2Node(addr, items);
+        selectednode->updateCols(cols);
+        selectednode->updateRows(rows);
 	selectednode->setBox(my_box);
 
 	//selectednode->updateColRow(
@@ -325,7 +333,12 @@ void ExactNodeJoinAction::Execute() {
       my_int addr = this_box->getJoinAddress(_r);
       //cout << "size of cols: " << cols.size() << ", size of rows: " << rows.size() << ", size of items: " << items.size() << endl;
       delete me;
+	cout << "cols size: " << cols.size() << "rows size: " << rows.size() << endl;
       selectednode = new ExactD2Node(addr, items);
+      //selectednode = new ExactD2Node(addr, items,cols, rows);
+      selectednode->updateCols(cols);
+      selectednode->updateRows(rows);
+	cout << "cols size: " << selectednode->getCols().size() << "rows size: " << selectednode->getRows().size() << endl;
       this_box->addNode(selectednode, _cnet);
       selectednode->setBox(this_box);
     }
@@ -341,12 +354,10 @@ void ExactNodeJoinAction::Execute() {
   //printNetworkInfo(_cnet, true);
   getConnection(_cnet, selectednode, true);
   //cout << "cnet after" << endl;
-  printNetworkInfo(_cnet, true);
   //cout << "qnet before, q addr: " << selectednode->getAddress(0) << endl;
   //printNetworkInfo(_qnet, false);
   getConnection(_qnet, selectednode, false);
   //cout << "qnet after" << endl;
-  //printNetworkInfo(_qnet, false);
   //Make sure I get added no matter what
   _cnet.add(selectednode);
   _qnet.add(selectednode);
@@ -354,7 +365,10 @@ void ExactNodeJoinAction::Execute() {
   //cout << "------------ before add to nodemap, csize: " << _cnet.node_map.size() << ", qsize: " << _qnet.node_map.size() << endl;
   _cnet.node_map[c_addr] = selectednode;
   _qnet.node_map[q_addr] = selectednode;
+  printNetworkInfo(_cnet, true);
+  printNetworkInfo(_qnet, false);
   cout << "------------ after add to nodemap, csize: " << _cnet.node_map.size() << ", qsize: " << _qnet.node_map.size() << endl;
+  cout << "number of cols: " << selectednode->getCols().size() << ", number of rows: " << selectednode->getRows().size() << endl;
   //cout << "---------connected, item size? " << me->getObject().size() << endl;
   
   /*
@@ -405,13 +419,19 @@ pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwor
       this_node = node;
     }
   }
+  cout << "box min: " << box_min << endl;
   result = make_pair(min_box, this_node);
   return make_pair(box_min, result);
   //return result;
 }
-//void ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn) {
 pair<Box*, Box*> ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isColumn) {
-  
+//pair<Box*, Box*> ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* node, my_int c_start, my_int c_end, bool isColumn) {
+  //my_int st_r = c_start % AMAX;
+  //my_int st_c = (c_start - st_r) / AMAX;
+  //my_int ed_r = c_end % AMAX;
+  //my_int ed_c = (c_end - ed_r) / AMAX;
+  //my_int start = st_r * AMAX + st_c;// This is address for query network
+  //my_int end = ed_r * AMAX + ed_c;// This is address for query network
   auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, isColumn, _r, 0) );
   cout << "*******************************in split method" << endl;
   auto_ptr<DeetooNetwork> visited_net( m->visit(node, net) );
@@ -441,13 +461,14 @@ pair<Box*, Box*> ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* nod
 
     cout << "past range: " << past_start_ele << ", " << past_end_ele << ", mid: " << past_mid << endl;
     cout << "this range: " << e_start << ", " << e_end << endl;
+      my_int mid = current->getMiddle(isColumn);
+      node->addColRow(mid, isColumn);
+      cout << "this node's cols size: " << node->getCols().size() << ", row size: " << node->getRows().size() << endl;
     if (it_no == 0 || (e_start == past_start_ele && e_end == past_end_ele) ) {
       // first node accessed by split()
       // or box is not yet splitted by other node.
       // split this box anyway
       //Let's add middle address to node's cols or rows
-      my_int mid = current->getMiddle(isColumn);
-      node->addColRow(mid, isColumn);
 
       cout << "current != past or it_no = 0" << endl;
       vector<my_int> new_boundary = current->getSplittedBoundary(isColumn);
@@ -470,7 +491,7 @@ pair<Box*, Box*> ExactNodeJoinAction::split(DeetooNetwork& net, ExactD2Node* nod
     //else {
       //box is already splitted
       //update and add this node to new box.
-      my_int addr = node->getAddress(1);
+      my_int addr = node->getAddress(isColumn);
       if (box_rb->inBox(addr) ) {
         box_rb->addNode(node,_cnet);
         box_lu->deleteNode(node);
