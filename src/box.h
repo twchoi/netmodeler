@@ -63,15 +63,15 @@ namespace Starsky {
       //returns position as string "lu", "lb", "ru", "rb"
       string getPosition(ExactD2Node* n);
       // returns start and end address (_c_address, _r_address)
-      pair<my_int, my_int> getBoundary();
+      vector<my_int> getBoundary();
       // returns true if addr is in the box, false otherwise
-      bool inBox(my_int addr);
+      bool inBox(ExactD2Node* node);
       bool isSplittable();
       void update(my_int start, my_int end);
       void updateMaps();
       void clearPositionMap();
       bool equalTo(Box* box);
-      int count() { return _nodemap.size(); };
+      int count() { return _nodeset.size(); };
       my_int positionToRandomAddress(string pos, Random& r);
       string getDiagonalPosition(string pos);
       my_int getJoinAddress(Random& r);

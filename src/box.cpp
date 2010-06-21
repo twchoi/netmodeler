@@ -96,7 +96,7 @@ void Box::deleteNode(ExactD2Node* n) {
     cout << " the node is not in this box" << endl;
   }
 }
-void Box::resetNodes() {
+void Box::clearNodes() {
   _nodeset.clear();
 }
 bool Box::inBox(ExactD2Node* node) {
@@ -142,6 +142,7 @@ string Box::getPosition(ExactD2Node* n) {
   }
   return position;
 }
+/*
 void Box::update(my_int start, my_int end) {
   _start = start;
   _end = end;
@@ -155,19 +156,17 @@ void Box::update(my_int start, my_int end) {
   _r_mid = getMid(_r_start, _r_end);
   updateMaps();
 }
+*/
 
 void Box::updateMaps() {
   clearPositionMap();
-  //_nodemap.clear();
-  map<my_int,ExactD2Node*>::const_iterator it;
-  for (it = _nodemap.begin(); it != _nodemap.end(); it++) {
-    my_int addr = (it->second)->getAddress(1);
-    if (!inBox(addr) ) {
-      _nodemap.erase(it->first);
+  set<ExactD2Node*>::const_iterator it;
+  for (it = _nodeset.begin(); it != _nodeset.end(); it++) {
+    if (!inBox(*it) ) {
+      _nodeset.erase(it);
     }
     else {
-      //_nodemap[it->first] = it->second;
-      string pos = getPosition(it->second);
+      string pos = getPosition(*it);
       _positionmap[pos] = _positionmap[pos] + 1;
     }
   }
@@ -191,13 +190,19 @@ bool Box::isSplittable() {
     return false;
   }
 }
-pair<my_int, my_int> Box::getBoundary() {
-  return make_pair(this->_start, this->_end);
+vector<my_int> Box::getBoundary() {
+  vector<my_int> result;
+  result.clear();
+  result.push_back(_c_start);
+  result.push_back(_c_end);
+  result.push_back(_r_start);
+  result.push_back(_r_end);
+  return result;
 }
 
 bool Box::equalTo(Box* box) {
-  pair<my_int,my_int> box_addrs = box->getBoundary();
-  if ( (_start == box_addrs.first) && (_end == box_addrs.second) ) {
+  vector<my_int> boundary = box->getBoundary();
+  if ( (_c_start == boundary[0]) && (_c_end == boundary[1]) && (_r_start == boundary[2]) && (_r_end == boundary[3]) ) {
     return true;
   }
   else {
@@ -277,34 +282,41 @@ string Box::getDiagonalPosition(string pos) {
 }
 vector<my_int> Box::getSplittedBoundary(bool isColumn) {
   cout << "~~~~~~~~~~~~~~~~~~~~~~ splitedboundary~~~~~~~~~~" << endl;
-  my_int start1, start2, end1, end2;
-  cout << "start: " << _start << ", end: " << _end << endl;
+  my_int c_start1, c_end1, c_start2, c_end2, r_start1, r_end1, r_start2, r_end2;
   vector<my_int> result;
   if (isColumn) {
-    start1 = _start;
-    end1 = colrowToAddr(_c_mid, _r_end);
-    start2 = colrowToAddr((_c_mid+1), _r_start);
-    //end1 = _c_mid * AMAX + _r_end; 
-    //start2 = _c_mid * AMAX + _r_start;
-    end2 = _end;  
-    cout << "COL::::end1: " << end1 << " start2: " << start2 << endl;
+    c_start1 = _c_start;
+    c_end1 = _c_mid;
+    r_start1 = _r_start;
+    r_end1 = _r_end;
+
+    c_start2 = _c_mid + 1;
+    c_end2 = _c_end;
+    r_start2 = _r_start;
+    r_end2 = _r_end;
+    //cout << "COL::::end1: " << end1 << " start2: " << start2 << endl;
   }
   else {
-    start1 = _start;
-    //end1 = _c_end * AMAX + _r_mid; 
-    //start2 = _c_start * AMAX + _r_mid;
-    //end1 = colrowToAddr(_c_end, _r_mid);
-    //start2 = colrowToAddr((_c_start+1), _r_mid);
-    end1 = colrowToAddr(_r_mid,_c_end);
-    start2 = end1 + 1;
-    end2 = _end;  
-    cout << "ROW::::end1: " << end1 << " start2: " << start2 << endl;
+    c_start1 = _c_start;
+    c_end1 = _c_end;
+    r_start1 = _r_start;
+    r_end1 = _r_mid;
+
+    c_start2 = _c_start;
+    c_end2 = _c_end;
+    r_start2 = _r_mid + 1;
+    r_end2 = _r_end;
+    //cout << "COL::::end1: " << end1 << " start2: " << start2 << endl;
   }  
 
-  result.push_back(start1);
-  result.push_back(end1);
-  result.push_back(start2);
-  result.push_back(end2);
+  result.push_back(c_start1);
+  result.push_back(c_end1);
+  result.push_back(r_start1);
+  result.push_back(r_end1);
+  result.push_back(c_start2);
+  result.push_back(c_end2);
+  result.push_back(r_start2);
+  result.push_back(r_end2);
   return result;
 }
 my_int Box::getMiddle(bool isCol) {
@@ -327,12 +339,12 @@ my_int Box::getMid(my_int start, my_int end) {
 pair<my_int, my_int> Box::getBroadcastRange(bool isCol) {
   my_int rg_start, rg_end;
   if ( isCol) {
-    rg_start = _c_start * AMAX;
-    rg_end = _c_end * AMAX + (AMAX -1);
+    rg_start = colrowToAddr(_c_start, 0);
+    rg_end = colrowToAddr(_c_end, (AMAX-1) );
   }
   else {
-    rg_start = _r_start * AMAX;
-    rg_end = _r_end * AMAX + (AMAX -1);
+    rg_start = colrowToAddr(_r_start, 0);
+    rg_end = colrowToAddr(_r_end, (AMAX-1) );
   }
   return make_pair(rg_start, rg_end); 
 }
@@ -341,10 +353,10 @@ pair<my_int, my_int> Box::getAddrOfElement(bool isCol) {
   else { return make_pair(_r_start, _r_end); }
 }
 void Box::printNodes() {
-  map<my_int, ExactD2Node*>::const_iterator it;
+  set<ExactD2Node*>::const_iterator it;
   cout << "nodes in this box are: " ;
-  for (it = _nodemap.begin(); it != _nodemap.end(); it++) {
-    cout << it->first << ", " ;
+  for (it = _nodeset.begin(); it != _nodeset.end(); it++) {
+    cout << (*it)->getAddress(true) << ", " ;
   }
   cout << endl;
 }
