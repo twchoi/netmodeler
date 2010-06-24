@@ -40,8 +40,6 @@ namespace Starsky {
   
   class Box  {
     protected:
-      map<my_int, ExactD2Node*> _c_nodemap; //nodemap for caching
-      map<my_int, ExactD2Node*> _q_nodemap; //nodemap for querying
       set<ExactD2Node*> _nodeset;
       my_int _c_start;  //column address of start
       my_int _c_end;    //column address of end
@@ -57,7 +55,7 @@ namespace Starsky {
     
     public:
       Box(my_int c_start, my_int c_end, my_int r_start, my_int r_end);
-      void addNode(ExactD2Node* n, DeetooNetwork& net);
+      void addNode(ExactD2Node* n);
       void clearNodes();
       void deleteNode(ExactD2Node* n);
       //returns position as string "lu", "lb", "ru", "rb"

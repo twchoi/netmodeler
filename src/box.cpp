@@ -49,31 +49,7 @@ void Box::setEmptyPositionMap() {
   _positionmap["rb"] = 0;
   _positionmap["lb"] = 0;
 }
-void Box::addNode(ExactD2Node* n, DeetooNetwork& net) {
-  my_int c_addr = n->getAddress(1);
-  my_int q_addr = n->getAddress(0);
-  /*
-  map<my_int, ExactD2Node*>::const_iterator nit;
-  for (nit = _nodemap.begin(); nit != _nodemap.end(); nit++) {
-    if (!(net.getEdge(n,nit->second)) && !(net.getEdge(nit->second,n))) {
-      net.add(Edge(n,nit->second) );
-    }
-  }
-  map<my_int, ExactD2Node*>::iterator c_idx = _c_nodemap.find(c_addr);
-  if (idx == _c_nodemap.end() ) {
-    _c_nodemap[c_addr] = n;
-    string pos = getPosition(n);
-    //cout << "THIS POSITION?????????????   " << pos << endl;
-    _positionmap[pos] = _positionmap[pos] + 1;
-  }
-  map<my_int, ExactD2Node*>::iterator q_idx = _q_nodemap.find(addr);
-  if (idx == _q_nodemap.end() ) {
-    _q_nodemap[addr] = n;
-    //string pos = getPosition(n);
-    //cout << "THIS POSITION?????????????   " << pos << endl;
-    //_positionmap[pos] = _positionmap[pos] + 1;
-  }
-  */
+void Box::addNode(ExactD2Node* n) {
   set<ExactD2Node*>::const_iterator idx = _nodeset.find(n);
   if (idx == _nodeset.end() ) {
     _nodeset.insert(n);
