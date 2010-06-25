@@ -118,21 +118,15 @@ string Box::getPosition(ExactD2Node* n) {
   }
   return position;
 }
-/*
-void Box::update(my_int start, my_int end) {
-  _start = start;
-  _end = end;
-  pair<my_int, my_int> start_cr = addrToColRow(start);
-  _c_start = start_cr.first;
-  _r_start = start_cr.second;
-  pair<my_int, my_int> end_cr = addrToColRow(end);
-  _c_end = end_cr.first;
-  _r_end = end_cr.second;
+void Box::update(my_int c_start, my_int c_end, my_int r_start, my_int r_end) {
+  _c_start = c_start;
+  _c_end = c_end;
+  _r_start = r_start;
+  _r_end = r_end;
   _c_mid = getMid(_c_start, _c_end);
   _r_mid = getMid(_r_start, _r_end);
   updateMaps();
 }
-*/
 
 void Box::updateMaps() {
   clearPositionMap();
@@ -343,4 +337,41 @@ bool Box::splitColumn() {
   else {
     return false;
   }
+}
+void Box::splitBox(bool isCol) {
+  vector<my_int> new_bound = getSplittedBoundary(isCol);
+    my_int c_start1 = new_bound[0];
+    my_int c_end1 = new_bound[1];
+    my_int r_start1= new_bound[2];
+    my_int r_end1= new_bound[3];
+
+    my_int c_start2 = new_bound[4];
+    my_int c_end2 = new_bound[5];
+    my_int r_start2= new_bound[6];
+    my_int r_end2= new_bound[7];
+
+    Box* box0 = new Box(c_start1, c_end1, r_start1, r_end1);
+    Box* box1 = new Box(c_start2, c_end2, r_start2, r_end2);
+    set<ExactD2Node*>::const_iterator nit;
+    for(nit= _nodeset.begin(); nit != _nodeset.end(); nit++) {
+      ExactD2Node* this_node = *nit;
+      if (box0->inBox(this_node) ) {
+        box0->addNode(this_node);
+	this_node->setBox(box0);
+      }
+      else if (box1->inBox(this_node) ) {
+        box1->addNode(this_node);
+	this_node->setBox(box1);
+      }
+      else {
+        cout << "~~~~~~~~~~~~~~~~ in no box" << endl;
+      }
+
+		      
+    }
+    cout << "box splitted: box0:  count: " << box0->count() << endl;
+    cout << "box splitted: box1:  count: " << box1->count() << endl;
+    //cout << "box splitted: box1: " << new_box->printBoundary() << ", count: " << new_box->count() << endl;
+    //cout << "box splitted: box1: " << new_box->printBoundary() << ", count: " << new_box->count() << endl;
+
 }

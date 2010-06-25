@@ -65,7 +65,7 @@ namespace Starsky {
       // returns true if addr is in the box, false otherwise
       bool inBox(ExactD2Node* node);
       bool isSplittable();
-      void update(my_int start, my_int end);
+      void update(my_int c_start, my_int c_end, my_int r_start, my_int r_end);
       void updateMaps();
       void clearPositionMap();
       bool equalTo(Box* box);
@@ -87,6 +87,9 @@ namespace Starsky {
       pair<my_int, my_int> getAddrOfElement(bool isCol) ;
       void printNodes();
       bool splitColumn();
+      // split this box
+      // returns 
+      void splitBox(bool isCol);
   };
 }
 #endif
