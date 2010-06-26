@@ -77,6 +77,8 @@ namespace Starsky {
       DeetooNetwork& _cnet;
       DeetooNetwork& _qnet;
       set<Box*> _boxset;
+      int _join_cost;
+      int _no_box;
       pair<int, pair<Box*, ExactD2Node*> > getBoxMin(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isCache);
       void printNetworkInfo(Network& net, bool bo);
       /*

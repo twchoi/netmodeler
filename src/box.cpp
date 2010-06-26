@@ -251,7 +251,6 @@ string Box::getDiagonalPosition(string pos) {
   }
 }
 vector<my_int> Box::getSplittedBoundary(bool isColumn) {
-  cout << "~~~~~~~~~~~~~~~~~~~~~~ splitedboundary~~~~~~~~~~" << endl;
   my_int c_start1, c_end1, c_start2, c_end2, r_start1, r_end1, r_start2, r_end2;
   vector<my_int> result;
   if (isColumn) {
@@ -369,9 +368,7 @@ void Box::splitBox(bool isCol) {
 
 		      
     }
-    cout << "box splitted: box0:  count: " << box0->count() << endl;
-    cout << "box splitted: box1:  count: " << box1->count() << endl;
-    //cout << "box splitted: box1: " << new_box->printBoundary() << ", count: " << new_box->count() << endl;
-    //cout << "box splitted: box1: " << new_box->printBoundary() << ", count: " << new_box->count() << endl;
+    //cout << "box splitted: box0:  count: " << box0->count() << endl;
+    //cout << "box splitted: box1:  count: " << box1->count() << endl;
 
 }
