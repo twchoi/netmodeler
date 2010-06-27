@@ -21,6 +21,7 @@ using namespace std;
   #define WMAX 4294967295L
 #endif
 //#define DEBUG
+#define JOIN
 //random string generator
 std::set<std::string> rstringGenerator ( int howmany, int length, Random& r )
 {
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
     sched.at(time, a);
     time += interval;  
   }
+#ifndef JOIN
   //cout << "added nodes" << endl;
   int k = 100; //number of items inserted into network.
   //schedule cache actions
@@ -79,18 +81,13 @@ int main(int argc, char *argv[])
     int ctime = time + ran_no.getExp(100.0);  
     Action* c_action = new ExactCacheAction(sched, ran_no, uns, *cacheNet_ptr.get(), c_so);
     sched.at(ctime, c_action);
-#ifdef DEBUG
-    cout << "cache time: " << ctime << endl;
-#endif
     //schedule query actions
     UniformNodeSelector q_start(ran_no);
     Action* q_action = new ExactQueryAction(sched, ran_no, q_start, *queryNet_ptr.get(), c_so);
     int qtime = ctime + ran_no.getExp(3600.0);
-#ifdef DEBUG
-    cout << "query time: " << qtime << endl;
-#endif
     sched.at(qtime, q_action);
   }
+#endif
 
   //Run for 360,000 seconds (100 hours) of simulated time
   Action* stop = new StopAction(sched);

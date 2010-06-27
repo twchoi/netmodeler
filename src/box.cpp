@@ -84,7 +84,7 @@ bool Box::inBox(ExactD2Node* node) {
   pair<my_int,my_int> cr_addrs = addrToColRow(addr);
   my_int addr_c =  cr_addrs.first; //this is node's position in caching node (column)
   my_int addr_r =  cr_addrs.second; // this is node's position in querying node (row)
-  if (( (addr_c >= _c_start) && (addr_c < _c_end) ) && ((addr_r >= _r_start) && (addr_r < _r_end) ) ) {
+  if (( (addr_c >= _c_start) && (addr_c <= _c_end) ) && ((addr_r >= _r_start) && (addr_r <= _r_end) ) ) {
     return true;
   }
   else {
@@ -339,36 +339,48 @@ bool Box::splitColumn() {
 }
 void Box::splitBox(bool isCol) {
   vector<my_int> new_bound = getSplittedBoundary(isCol);
-    my_int c_start1 = new_bound[0];
-    my_int c_end1 = new_bound[1];
-    my_int r_start1= new_bound[2];
-    my_int r_end1= new_bound[3];
+  my_int c_start1 = new_bound[0];
+  my_int c_end1 = new_bound[1];
+  my_int r_start1= new_bound[2];
+  my_int r_end1= new_bound[3];
 
-    my_int c_start2 = new_bound[4];
-    my_int c_end2 = new_bound[5];
-    my_int r_start2= new_bound[6];
-    my_int r_end2= new_bound[7];
+  my_int c_start2 = new_bound[4];
+  my_int c_end2 = new_bound[5];
+  my_int r_start2= new_bound[6];
+  my_int r_end2= new_bound[7];
 
-    Box* box0 = new Box(c_start1, c_end1, r_start1, r_end1);
-    Box* box1 = new Box(c_start2, c_end2, r_start2, r_end2);
-    set<ExactD2Node*>::const_iterator nit;
-    for(nit= _nodeset.begin(); nit != _nodeset.end(); nit++) {
-      ExactD2Node* this_node = *nit;
-      if (box0->inBox(this_node) ) {
-        box0->addNode(this_node);
-	this_node->setBox(box0);
-      }
-      else if (box1->inBox(this_node) ) {
-        box1->addNode(this_node);
-	this_node->setBox(box1);
-      }
-      else {
-        cout << "~~~~~~~~~~~~~~~~ in no box" << endl;
-      }
+  Box* box0 = new Box(c_start1, c_end1, r_start1, r_end1);
+  Box* box1 = new Box(c_start2, c_end2, r_start2, r_end2);
+  cout << "********************* in splitBox() ********************* " << endl;
+  cout << "this_box: " << this << ", range: " << _c_start  << ":" << _c_end << ":" << _r_start << ":" << _r_end << endl;
 
-		      
+  cout << "box0: " << box0 << ", range: " << c_start1 << ":" << c_end1 << ":" << r_start1 << ":" << r_end1 << endl;
+  cout << "box1: " << box1 << ", range: " << c_start2 << ":" << c_end2 << ":" << r_start2 << ":" << r_end2 << endl;
+  set<ExactD2Node*>::const_iterator nit;
+  for(nit= _nodeset.begin(); nit != _nodeset.end(); nit++) {
+    ExactD2Node* this_node = *nit;
+    /*
+    my_int addr = this_node->getAddress(true);
+    pair<my_int, my_int> colrow = addrToColRow(addr);
+    cout << "this node's col:row " << colrow.first << ":" << colrow.second << endl;
+    */
+    if (box0->inBox(this_node) ) {
+      box0->addNode(this_node);
+      this_node->setBox(box0);
     }
-    //cout << "box splitted: box0:  count: " << box0->count() << endl;
-    //cout << "box splitted: box1:  count: " << box1->count() << endl;
-
+    else if (box1->inBox(this_node) ) {
+      box1->addNode(this_node);
+      this_node->setBox(box1);
+    }
+    else {
+      //cout << "~~~~~~~~~~~~~~~~ in no box" << endl;
+    }
+    Box* box = this_node->getBox();
+    if (this->equalTo(box)) {
+      cout << "WARNING!!!!!!!!!!! box is not splitted" << endl;
+    }
+    cout << "afer split: node: " << this_node->getAddress(isCol) << endl;
+  }
+  //cout << "box splitted: box0:  count: " << box0->count() << endl;
+  //cout << "box splitted: box1:  count: " << box1->count() << endl;
 }
