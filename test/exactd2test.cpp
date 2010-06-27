@@ -21,7 +21,7 @@ using namespace std;
   #define WMAX 4294967295L
 #endif
 //#define DEBUG
-#define JOIN
+//#define JOIN
 //random string generator
 std::set<std::string> rstringGenerator ( int howmany, int length, Random& r )
 {

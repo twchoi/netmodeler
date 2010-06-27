@@ -351,11 +351,13 @@ void Box::splitBox(bool isCol) {
 
   Box* box0 = new Box(c_start1, c_end1, r_start1, r_end1);
   Box* box1 = new Box(c_start2, c_end2, r_start2, r_end2);
+  /*
   cout << "********************* in splitBox() ********************* " << endl;
   cout << "this_box: " << this << ", range: " << _c_start  << ":" << _c_end << ":" << _r_start << ":" << _r_end << endl;
 
   cout << "box0: " << box0 << ", range: " << c_start1 << ":" << c_end1 << ":" << r_start1 << ":" << r_end1 << endl;
   cout << "box1: " << box1 << ", range: " << c_start2 << ":" << c_end2 << ":" << r_start2 << ":" << r_end2 << endl;
+  */
   set<ExactD2Node*>::const_iterator nit;
   for(nit= _nodeset.begin(); nit != _nodeset.end(); nit++) {
     ExactD2Node* this_node = *nit;
@@ -379,7 +381,7 @@ void Box::splitBox(bool isCol) {
     if (this->equalTo(box)) {
       cout << "WARNING!!!!!!!!!!! box is not splitted" << endl;
     }
-    cout << "afer split: node: " << this_node->getAddress(isCol) << endl;
+    //cout << "afer split: node: " << this_node->getAddress(isCol) << endl;
   }
   //cout << "box splitted: box0:  count: " << box0->count() << endl;
   //cout << "box splitted: box1:  count: " << box1->count() << endl;
