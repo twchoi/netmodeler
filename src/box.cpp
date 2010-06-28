@@ -52,12 +52,15 @@ void Box::setEmptyPositionMap() {
 void Box::addNode(ExactD2Node* n) {
   set<ExactD2Node*>::const_iterator idx = _nodeset.find(n);
   if (idx == _nodeset.end() ) {
+    //cout << "add this node: " << n->getAddress(1) << " in box: " << this<< endl;
     _nodeset.insert(n);
     string pos = getPosition(n);
+    //cout << "position: " << pos << endl;
     _positionmap[pos] = _positionmap[pos] + 1;
   }
   else {
     // this node is already in this box
+    //cout << "already in this box" << endl;
   }
 
 }
@@ -69,7 +72,7 @@ void Box::deleteNode(ExactD2Node* n) {
     _positionmap[pos] = _positionmap[pos] -1;
   }
   else {
-    cout << " the node is not in this box" << endl;
+    //cout << " the node is not in this box" << endl;
   }
 }
 void Box::clearNodes() {
@@ -212,6 +215,12 @@ my_int Box::getJoinAddress(Random& r) {
   int min = 10;
   int max = 0;
   int count_zero = 0;
+  /*
+  cout << "this box? " << this << endl;
+  cout << "in getJoinAddress" << endl;
+  cout << "pos map size: " << _positionmap.size() << endl;
+  cout << "pos map: " << _positionmap["ru"] << "," << _positionmap["lu"] << "," << _positionmap["rb"] << ","<< _positionmap["lb"] << endl; 
+  */
   map<string,int>::const_iterator it;
   for(it = _positionmap.begin(); it != _positionmap.end(); it++) {
     int count = it->second;
@@ -227,12 +236,15 @@ my_int Box::getJoinAddress(Random& r) {
       max_pos = it->first;
     }
   }
+  //cout << "end of position map iteration" << endl;
   if (count_zero == 3 || count_zero ==0) {
     // get diagonal position
+    //cout << "get diagonal position" << endl;
     string dia_pos = getDiagonalPosition(max_pos);
     return positionToRandomAddress(dia_pos,r);
   } 
   else {
+    //cout << "get address in min postion: "<< endl;
     return positionToRandomAddress(min_pos,r);
   }
 }
@@ -330,14 +342,14 @@ void Box::printNodes() {
   cout << endl;
 }
 bool Box::splitColumn() {
-  if ((_c_end - _c_start) > (_r_end - _r_start) ) {
+  if ((_c_end - _c_start) >= (_r_end - _r_start) ) {
     return true;
   }
   else {
     return false;
   }
 }
-void Box::splitBox(bool isCol) {
+Box* Box::splitBox(bool isCol,bool inBox) {
   vector<my_int> new_bound = getSplittedBoundary(isCol);
   my_int c_start1 = new_bound[0];
   my_int c_end1 = new_bound[1];
@@ -383,6 +395,25 @@ void Box::splitBox(bool isCol) {
     }
     //cout << "afer split: node: " << this_node->getAddress(isCol) << endl;
   }
-  //cout << "box splitted: box0:  count: " << box0->count() << endl;
-  //cout << "box splitted: box1:  count: " << box1->count() << endl;
+  //cout << "before split: box's size: " << this->count() << endl;
+  _nodeset.clear();
+  /*
+  cout << "box: " << this << " is obsolete" << endl;
+  cout << "bound: " << _c_start << ":" << _c_end << ":" << _r_start << ":" << _r_end << endl;
+  cout << "box's size " << this->count() << endl;
+  vector<my_int> bound0 = box0->getBoundary();
+  vector<my_int> bound1 = box1->getBoundary();
+  cout << "box splitted: box0: " << box0 << ", count: " << box0->count() << endl;
+  cout << "bound: " << bound0[0] << ":" << bound0[1] << ":" << bound0[2] << ":" << bound0[3] << endl;
+  cout << "box splitted: box1: " << box1 << ", count: " << box1->count() << endl;
+  cout << "bound: " << bound1[0] << ":" << bound1[1] << ":" << bound1[2] << ":" << bound1[3] << endl;
+  */
+  if (inBox) {
+    if (box0->count() >= box1->count() ) {
+      return box1;
+    }
+    else {
+      return box0;
+    }
+  }
 }

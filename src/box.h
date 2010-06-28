@@ -89,7 +89,7 @@ namespace Starsky {
       bool splitColumn();
       // split this box
       // returns 
-      void splitBox(bool isCol);
+      Box* splitBox(bool isCol, bool inBox);
   };
 }
 #endif
