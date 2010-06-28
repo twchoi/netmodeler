@@ -253,7 +253,14 @@ void ExactNodeJoinAction::Execute() {
 	} 
 	*/
 	//Box* my_box = split(_cnet, nei, start, end, moreCols);
-	Box* my_box = split(_cnet, nei, start, end, moreCols);
+	Box* my_box;
+	if (moreCols) {
+	  my_box = split(_cnet, nei, start, end, moreCols);
+	}
+	else {
+          my_box = split(_qnet, nei, start, end, moreCols);
+	}
+
 
 	/*
 	vector<my_int> bound1 = my_box->getBoundary();
@@ -316,6 +323,31 @@ void ExactNodeJoinAction::Execute() {
   //cout << "------------ after add to nodemap, csize: " << _cnet.node_map.size() << ", qsize: " << _qnet.node_map.size() << endl;
   //cout << "---------connected, item size? " << me->getObject().size() << endl;
   /*
+  map<Box*, my_int> cols;
+  map<Box*, my_int> rows;
+  cols.clear();
+  rows.clear();
+  my_int col_width;
+  my_int row_width;
+  cout << "________________________________________" << endl;
+  auto_ptr<NodeIterator> nb ( _cnet.getNodeIterator() );
+  while ( nb->moveNext() ) {
+    ExactD2Node* en = dynamic_cast<ExactD2Node*> ( nb->current() );
+    my_int c_addr = en->getAddress(1);
+    my_int q_addr = en->getAddress(0);
+    Box* box = en->getBox();
+    vector<my_int> bound = box->getBoundary();
+    //cout << bound.size() << endl;
+    //cout << "@@@@@node: (" << c_addr << ": " << q_addr << "), size: " << box->count() << ", box: " << box << ", box range: " << bound[0] << ", " << bound[1] << ", " << bound[2] << ", " << bound[3]  << endl;
+    //cout << "c_diff: " << bound[1] - bound[0] << ", q_diff: " << bound[3] - bound[2] << endl;
+    col_width = bound[1] - bound[0];
+    row_width = bound[3] - bound[2];
+    cols[box] = col_width;
+    rows[box] = row_width; 
+  }
+  cout << "cols: " << cols.size() << ", rows: " << rows.size() << endl;
+  */
+  /*
   set<my_int> cols;
   set<my_int> rows;
   cols.clear();
@@ -354,7 +386,7 @@ void ExactNodeJoinAction::Execute() {
   _sched.after(lifetime + sleeptime, rejoin);
   */
   //Print out results:
-/*
+  /*
 #ifdef DEBUG
   std::cout << "join\t" 
             << _sched.getCurrentTime() << "\t"
@@ -693,11 +725,13 @@ void ExactQueryAction::Execute() {
   my_int rg_end = range.second;
   vector<my_int> bound = this_box->getBoundary();
   //cout << "~~~~~~~~~~~~~~~~~~~~~~querying addr: " << node->getAddress(false) << endl;
+  /*
   pair<my_int,my_int> start_colrow = this_box->addrToColRow(rg_start);
-  //cout << "rg_start's row: " << start_colrow.first << endl;
+  cout << "rg_start's row: " << start_colrow.first << endl;
   pair<my_int, my_int> end_colrow = this_box->addrToColRow(rg_end);
-  //cout << "rg_end's row: " << end_colrow.first << endl;
+  cout << "rg_end's row: " << end_colrow.first << endl;
   pair<my_int, my_int> colrow = this_box->addrToColRow(node->getAddress(true) );
+  */
   /*
  cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ in query action~~~~~~~~" << endl;
   cout << "box is " << this_box << endl;
@@ -707,6 +741,7 @@ void ExactQueryAction::Execute() {
   cout << "querying range: " << range.first << ":" << range.second << endl;
   cout << "this_box: " << this_box << endl;
   cout << "this box's nodes: " << this_box->count() << endl;
+  cout << "this node: " << node->getAddress(0) << ", range: " << rg_start << ":" << rg_end << endl;
   */
   auto_ptr<DeetooMessage> query_m (new DeetooMessage(rg_start, rg_end,false, _r, 0.0) );
   auto_ptr<DeetooNetwork> tmp_net (query_m->visit(node, _net));
