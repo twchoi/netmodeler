@@ -318,35 +318,40 @@ void ExactNodeJoinAction::Execute() {
   _qnet.add(selectednode);
   _cnet.node_map[c_addr] = selectednode;
   _qnet.node_map[q_addr] = selectednode;
+  //cout << _cnet.getNodeSize() << '\t' << _cnet.getEdgeSize() << '\t' << _qnet.getNodeSize() <<'\t' << _qnet.getEdgeSize() << endl;
   //printNetworkInfo(_cnet, true);
   //printNetworkInfo(_qnet, false);
   //cout << "------------ after add to nodemap, csize: " << _cnet.node_map.size() << ", qsize: " << _qnet.node_map.size() << endl;
   //cout << "---------connected, item size? " << me->getObject().size() << endl;
+  
+  // for test only!!!
+  // count the number of box in this network
   /*
-  map<Box*, my_int> cols;
-  map<Box*, my_int> rows;
+  map<Box*, int> cols;
+  map<Box*, int> rows;
   cols.clear();
   rows.clear();
   my_int col_width;
   my_int row_width;
-  cout << "________________________________________" << endl;
+  int c_box_size = 0;
+  int q_box_size = 0;
+  //cout << "________________________________________" << endl;
   auto_ptr<NodeIterator> nb ( _cnet.getNodeIterator() );
   while ( nb->moveNext() ) {
     ExactD2Node* en = dynamic_cast<ExactD2Node*> ( nb->current() );
     my_int c_addr = en->getAddress(1);
     my_int q_addr = en->getAddress(0);
     Box* box = en->getBox();
-    vector<my_int> bound = box->getBoundary();
-    //cout << bound.size() << endl;
-    //cout << "@@@@@node: (" << c_addr << ": " << q_addr << "), size: " << box->count() << ", box: " << box << ", box range: " << bound[0] << ", " << bound[1] << ", " << bound[2] << ", " << bound[3]  << endl;
-    //cout << "c_diff: " << bound[1] - bound[0] << ", q_diff: " << bound[3] - bound[2] << endl;
-    col_width = bound[1] - bound[0];
-    row_width = bound[3] - bound[2];
-    cols[box] = col_width;
-    rows[box] = row_width; 
+    int count = box->count();
+    cols[box] = count;
+    if (count == 5) {
+      rows[box] = count;
+    }
   }
-  cout << "cols: " << cols.size() << ", rows: " << rows.size() << endl;
+  float ave_nodes_in_box = getAverageNodesInBox(cols);
+  cout << _cnet.getNodeSize() << "\t" << cols.size() << "\t" << rows.size() << "\t" << ave_nodes_in_box  << endl;
   */
+  //cout << "cols: " << cols.size() << ", rows: " << rows.size() << endl;
   /*
   set<my_int> cols;
   set<my_int> rows;
@@ -399,6 +404,16 @@ void ExactNodeJoinAction::Execute() {
 	    << std::endl;
 #endif
 */
+}
+float ExactNodeJoinAction::getAverageNodesInBox(map<Box*,int> boxes) {
+  int sum = 0;
+  map<Box*,int>::const_iterator it;
+  for(it = boxes.begin(); it != boxes.end(); it++) {
+    sum += it->second;
+  }
+  int n = boxes.size();
+  float average = (float)sum / (float)n;
+  return average;
 }
 pair<int, pair<Box*, ExactD2Node*> > ExactNodeJoinAction::getBoxMin(DeetooNetwork& net, ExactD2Node* node, my_int start, my_int end, bool isCache) {
   auto_ptr<DeetooMessage> m (new DeetooMessage(start, end, isCache, _r, 0) );
@@ -623,7 +638,7 @@ void ExactNodeJoinAction::getConnection(DeetooNetwork& net, ExactD2Node* me, boo
       //     << " : " << neighbor1->getAddress(cache) << endl;
       net.remove(old_edge);
     }
-    ExactD2Node* shortcut = dynamic_cast<ExactD2Node*> (net.returnShortcutNode(me, net.node_map,true) );
+    ExactD2Node* shortcut = dynamic_cast<ExactD2Node*> (net.returnShortcutNode(me, net.node_map,cache) );
     //make connection to the three neighbors
     if(!(net.getEdge(me, neighbor0)) && !(net.getEdge(neighbor0, me)) && neighbor0 != me) {
       net.add(Edge(me, neighbor0));

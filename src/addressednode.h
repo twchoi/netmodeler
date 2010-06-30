@@ -118,6 +118,7 @@ namespace Starsky {
       my_int distanceTo(AddressedNode* target, bool cq);
       my_int rightDistanceTo(AddressedNode* target, bool cq);
       my_int leftDistanceTo(AddressedNode* target, bool cq);
+      int countItems() { return _itemSet.size(); };
     };
 }
 #endif

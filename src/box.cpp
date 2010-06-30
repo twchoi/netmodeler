@@ -324,6 +324,13 @@ pair<my_int, my_int> Box::getBroadcastRange(bool isCol) {
     rg_end = colrowToAddr(_c_end, (AMAX-1) );
   }
   else {
+    //For row split, we need to use addresses in querying space.
+    //In querying space, row address should be replaced with column address,
+    //and vice versa.
+    //Note that query_address = row_address * \sqrt(N) + column_address,
+    //while cache_address = column_address * \sqrt(N) + row_address.
+    //Thus, address for range also should be converted to the addresses
+    //in Querying space.
     rg_start = colrowToAddr(_r_start, 0);
     rg_end = colrowToAddr(_r_end, (AMAX-1) );
   }

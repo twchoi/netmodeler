@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
   sched.start();
   //check load balance, count number of replica per item.
   /*
+  int j = 1;
   for (item_it = items.begin(); item_it != items.end(); item_it++)
   {
     int no_rep = 0;	  
@@ -110,14 +111,22 @@ int main(int argc, char *argv[])
       //cout << "-------no_rep: " << no_rep << endl;
       
     }
-    cout << "item: " << *item_it << ", no_rep: " << no_rep << endl;
+    //cout << "item: " << *item_it << ", no_rep: " << no_rep << endl;
+    cout << *item_it <<"\t" << j << "\t" << no_rep << endl;
+    j++;
   }
+  */
+  /*
   //std::cout << "#Finished" << std::endl;
+
+  cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+  //count number of objects per node
   int no_rep = 0;	  
   auto_ptr<NodeIterator> ni(cacheNet_ptr->getNodeIterator() );
   while(ni->moveNext() ) {
     AddressedNode* th_node = dynamic_cast<AddressedNode*>(ni->current() );
-    cout << "addr: " << th_node->getAddress(1) << ", no_object: " << th_node->objectCount() << endl;
+    //cout << "addr: " << th_node->getAddress(1) << ", no_object: " << th_node->objectCount() << endl;
+    cout << th_node->getAddress(1) << "\t" << th_node->objectCount() << endl;
 
   }
   */

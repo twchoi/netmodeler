@@ -71,6 +71,7 @@ namespace Starsky {
        */
       int copyObjects(ExactD2Node* me, ExactD2Node* nei);
       int stabilization_msgs;
+      float getAverageNodesInBox(map<Box*,int> boxes);
     protected:
       EventScheduler& _sched;
       Random& _r;
